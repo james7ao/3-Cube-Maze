@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cube Maze</title>
+<style>
+  :root{
+    --bg:#0c1020; --panel:rgba(18,24,46,.82); --ink:#e8ecff; --muted:#9aa3c7;
+    --accent:#5ad1ff; --accent2:#ffd45a; --good:#5affa1; --pivot:#c77dff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:radial-gradient(1200px 800px at 70% -10%,#1a2350,#0c1020 60%);color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
+  #scene{position:fixed;inset:0;z-index:0}
+  #scene canvas{display:block;touch-action:none}
+  .panel{position:fixed;z-index:10;background:var(--panel);backdrop-filter:blur(8px);border:1px solid rgba(120,140,220,.25);
+    border-radius:14px;padding:14px 16px;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+  #hud{top:14px;left:14px;min-width:210px;font-variant-numeric:tabular-nums}
+  #hud h1{margin:0 0 8px;font-size:15px;letter-spacing:.5px}
+  #hud .row{display:flex;justify-content:space-between;gap:18px;font-size:13px;color:var(--muted);padding:2px 0}
+  #hud .row b{color:var(--ink);font-weight:600}
+  #help{bottom:14px;left:14px;max-width:340px;font-size:12.5px;line-height:1.55;color:var(--muted)}
+  #help h2{margin:0 0 6px;font-size:13px;color:var(--ink);letter-spacing:.4px}
+  kbd{display:inline-block;min-width:18px;text-align:center;padding:1px 6px;margin:0 1px;border-radius:6px;
+    background:#222a4d;border:1px solid #3a4677;color:#dbe2ff;font-size:11px;font-family:inherit}
+  .pill{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600}
+  .pill.rot{background:rgba(199,125,255,.18);color:#d9b3ff;border:1px solid rgba(199,125,255,.4)}
+  #ctrls{position:fixed;z-index:20;top:14px;right:14px;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+  .btn{cursor:pointer;border:1px solid #3a4677;background:#1a2245;color:var(--ink);border-radius:10px;
+    padding:8px 12px;font-size:13px;font-family:inherit;transition:.15s;text-align:center}
+  .btn:hover{background:#243064;border-color:#5566aa}
+  .btn.active{background:var(--accent);color:#06243a;border-color:var(--accent)}
+  .seg{display:flex;gap:4px}
+  .seg .btn{flex:1;padding:6px 0}
+  #toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);opacity:0;pointer-events:none;
+    text-align:center;padding:26px 40px;border-radius:18px;background:rgba(10,16,36,.92);border:1px solid rgba(120,255,180,.4);
+    transition:.35s;box-shadow:0 20px 80px rgba(0,0,0,.6)}
+  #toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+  #toast h2{margin:0 0 6px;font-size:26px;color:var(--good)}
+  #toast.lose{border-color:rgba(255,107,107,.5)}
+  #toast.lose h2{color:#ff6b6b}
+  #toast p{margin:0 0 14px;color:var(--muted);font-size:14px}
+  #rotHint{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);opacity:0;transition:.2s;
+    background:rgba(199,125,255,.16);border:1px solid rgba(199,125,255,.5);color:#e9d6ff;
+    padding:7px 14px;border-radius:999px;font-size:12.5px;pointer-events:none}
+  #rotHint.show{opacity:1}
+  .muted{color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<div id="hud" class="panel">
+  <h1>🧊 CUBE MAZE</h1>
+  <div class="row"><span>Layer (depth)</span><b id="hLayer">–</b></div>
+  <div class="row"><span>Up-axis</span><b id="hAxis">–</b></div>
+  <div class="row"><span>Moves</span><b id="hMoves">0</b></div>
+  <div class="row"><span>Rotations</span><b id="hRots">0</b></div>
+  <div class="row"><span>Best solve</span><b id="hPar">–</b></div>
+  <div class="row"><span>Budget left</span><b id="hBudget">–</b></div>
+  <div class="row"><span>Goal</span><b id="hGoal">find it</b></div>
+</div>
+
+<div id="ctrls">
+  <button class="btn active" id="view3d">3D view</button>
+  <button class="btn" id="view2d">2D view</button>
+  <div class="seg" style="margin-top:4px">
+    <button class="btn" data-size="3">3³</button>
+    <button class="btn active" data-size="5">5³</button>
+    <button class="btn" data-size="7">7³</button>
+  </div>
+  <button class="btn" id="restart">↻ New cube</button>
+  <button class="btn" id="solve" style="margin-top:4px">🧭 Stuck? Auto-solve</button>
+</div>
+
+<div id="help" class="panel">
+  <h2>How to play</h2>
+  Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / arrows through the lit maze layer.
+  Reach a <span style="color:var(--pivot)">purple pivot</span> tile, then <span class="pill rot">rotate the cube</span>
+  with <kbd>Q</kbd><kbd>E</kbd> (roll) or <kbd>R</kbd><kbd>F</kbd> (tumble) — this turns a wall you can't pass
+  into a new floor, revealing fresh layers. Get the <span style="color:var(--accent2)">gold marker</span> onto the
+  <span style="color:var(--good)">green goal</span>. Drag to orbit. Toggle <kbd>V</kbd> for flat 2D.
+</div>
+
+<div id="rotHint">On a pivot — <kbd>Q</kbd><kbd>E</kbd> roll · <kbd>R</kbd><kbd>F</kbd> tumble to rotate the cube</div>
+
+<div id="toast" class="panel">
+  <h2 id="toastTitle">Solved! 🎉</h2>
+  <p id="toastBody">You navigated the cube.</p>
+  <div style="display:flex;gap:8px;justify-content:center">
+    <button class="btn" id="toastRetry">↻ Retry this cube</button>
+    <button class="btn" id="toastBtn">✦ New cube</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* =====================================================================
+   CUBE MAZE  —  a 3D maze made of stacked maze layers.
+   Logic frame ("cube frame"): cells indexed (x,y,z) in 0..N-1.
+   The maze is a 3D perfect maze (spanning tree) over all N^3 cells, so
+   every cell connects to every other through some path of passages.
+   The player only walks HORIZONTALLY within the current layer. To change
+   layers you stand on a pivot and ROTATE the whole cube 90°, which makes
+   a previously-vertical passage horizontal. Orientation R is a 3x3
+   integer rotation matrix (one of the 24 cube orientations) mapping
+   cube-frame -> world-frame.  up cube-axis = R^T * worldUp.
+   ===================================================================== */
+
+// ---------- tiny 3x3 integer matrix math ----------
+const I3 = [[1,0,0],[0,1,0],[0,0,1]];
+function matMul(A,B){const C=[[0,0,0],[0,0,0],[0,0,0]];
+  for(let i=0;i<3;i++)for(let j=0;j<3;j++){let s=0;for(let k=0;k<3;k++)s+=A[i][k]*B[k][j];C[i][j]=s;}return C;}
+function matT(A){return [[A[0][0],A[1][0],A[2][0]],[A[0][1],A[1][1],A[2][1]],[A[0][2],A[1][2],A[2][2]]];}
+function matVec(A,v){return [A[0][0]*v[0]+A[0][1]*v[1]+A[0][2]*v[2],
+                             A[1][0]*v[0]+A[1][1]*v[1]+A[1][2]*v[2],
+                             A[2][0]*v[0]+A[2][1]*v[1]+A[2][2]*v[2]];}
+function matKey(A){return A.map(r=>r.join(',')).join(';');}
+// world-frame 90° rotations
+const RX = [[1,0,0],[0,0,-1],[0,1,0]];   // about world X (+90)
+const RY = [[0,0,1],[0,1,0],[-1,0,0]];   // about world Y (+90)
+const RZ = [[0,-1,0],[1,0,0],[0,0,1]];   // about world Z (+90)
+const RXn=matT(RX), RYn=matT(RY), RZn=matT(RZ);
+// the 24 orientations (closure under RX,RY,RZ)
+const ORIENTS=(()=>{const seen=new Map();const list=[];const stack=[I3];
+  while(stack.length){const M=stack.pop();const k=matKey(M);if(seen.has(k))continue;
+    seen.set(k,list.length);list.push(M);for(const G of [RX,RY,RZ])stack.push(matMul(G,M));}
+  return {list,index:seen};})();
+function orientIndex(R){return ORIENTS.index.get(matKey(R));}
+
+// ---------- maze generation: 3D recursive backtracker (perfect maze) ----------
+// passages[x][y][z] = Set of direction-strings among the 6 neighbors that are OPEN.
+const DIRS=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+function dirKey(d){return d.join(',');}
+function negDir(d){return [-d[0],-d[1],-d[2]];}
+
+function genMaze(N,rng){
+  const open={}; // key "x,y,z" -> Set of dirKeys
+  const key=(x,y,z)=>x+','+y+','+z;
+  for(let x=0;x<N;x++)for(let y=0;y<N;y++)for(let z=0;z<N;z++)open[key(x,y,z)]=new Set();
+  const visited=new Set();
+  const start=[ (N/2|0),(N/2|0),(N/2|0) ];
+  const stack=[start]; visited.add(key(...start));
+  while(stack.length){
+    const [x,y,z]=stack[stack.length-1];
+    // shuffle dirs
+    const nbrs=[];
+    for(const d of DIRS){const nx=x+d[0],ny=y+d[1],nz=z+d[2];
+      if(nx<0||ny<0||nz<0||nx>=N||ny>=N||nz>=N)continue;
+      if(!visited.has(key(nx,ny,nz)))nbrs.push(d);}
+    if(nbrs.length===0){stack.pop();continue;}
+    const d=nbrs[(rng()*nbrs.length)|0];
+    const nx=x+d[0],ny=y+d[1],nz=z+d[2];
+    open[key(x,y,z)].add(dirKey(d));
+    open[key(nx,ny,nz)].add(dirKey(negDir(d)));
+    visited.add(key(nx,ny,nz));
+    stack.push([nx,ny,nz]);
+  }
+  return open;
+}
+function isOpen(open,N,c,d){
+  return open[c[0]+','+c[1]+','+c[2]].has(dirKey(d));
+}
+
+// ---------- play-state graph: state = (cell, orientationIndex) ----------
+// Horizontal moves: the two cube-axes not equal to the current up cube-axis.
+// Rotations (only on pivot): premultiply R by RX,RXn,RZ,RZn (world roll/tumble).
+function upAxisOf(R){ // returns {axis:0|1|2, sign:+1|-1} of cube-axis pointing to world +Y
+  const v=matVec(matT(R),[0,1,0]);
+  for(let a=0;a<3;a++)if(v[a]!==0)return {axis:a,sign:v[a]};
+}
+function horizDirs(R){ // cube-frame unit dirs for world W/S/A/D
+  const Rt=matT(R);
+  return [matVec(Rt,[0,0,-1]),matVec(Rt,[0,0,1]),matVec(Rt,[-1,0,0]),matVec(Rt,[1,0,0])];
+}
+const ROT_OPS=[RZ,RZn,RX,RXn]; // Q,E,R,F
+
+function solveBFS(open,N,pivots,startCell,startOri){
+  const key=(c,o)=>c[0]+','+c[1]+','+c[2]+'|'+o;
+  const dist=new Map();const q=[];
+  const s={c:startCell,o:startOri};dist.set(key(startCell,startOri),0);q.push(s);
+  let head=0;const far={cell:startCell,d:-1,needsRot:false};
+  const camePivot=new Map(); // track if path used a rotation (approx: store rot count via dist parity not exact)
+  const rotUsed=new Map();rotUsed.set(key(startCell,startOri),false);
+  while(head<q.length){
+    const {c,o}=q[head++];const R=ORIENTS.list[o];const kk=key(c,o);
+    const d0=dist.get(kk);const usedRot=rotUsed.get(kk);
+    // record farthest cell (best distance), prefer reachable cells needing rotation
+    if(d0>far.d||(d0===far.d&&usedRot&&!far.needsRot)){far.cell=c;far.d=d0;far.needsRot=usedRot;}
+    // horizontal moves
+    for(const hd of horizDirs(R)){
+      const nc=[c[0]+hd[0],c[1]+hd[1],c[2]+hd[2]];
+      if(nc[0]<0||nc[1]<0||nc[2]<0||nc[0]>=N||nc[1]>=N||nc[2]>=N)continue;
+      if(!isOpen(open,N,c,hd))continue;
+      const nk=key(nc,o);if(dist.has(nk))continue;
+      dist.set(nk,d0+1);rotUsed.set(nk,usedRot);q.push({c:nc,o});
+    }
+    // rotations on pivot
+    if(pivots.has(c[0]+','+c[1]+','+c[2])){
+      for(const G of ROT_OPS){
+        const nR=matMul(G,R);const no=orientIndex(nR);
+        const nk=key(c,no);if(dist.has(nk))continue;
+        dist.set(nk,d0+1);rotUsed.set(nk,true);q.push({c,o:no});
+      }
+    }
+  }
+  // collect distance to each cell (min over orientations) for goal selection
+  const cellBest=new Map();
+  for(const [k,d] of dist){const cell=k.split('|')[0];
+    if(!cellBest.has(cell)||d<cellBest.get(cell))cellBest.set(cell,d);}
+  return {dist,cellBest};
+}
+
+// ---------- build a full, solvable level ----------
+function makeRng(seed){let s=seed>>>0;return ()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
+function buildLevel(N,seed){
+  for(let attempt=0;attempt<200;attempt++){
+    const rng=makeRng(seed+attempt*7919);
+    const open=genMaze(N,rng);
+    // pivots: ~32% of cells, always include center
+    const pivots=new Set();
+    const cx=N/2|0;pivots.add(cx+','+cx+','+cx);
+    const target=Math.max(3,Math.round(N*N*N*0.32));
+    while(pivots.size<target){
+      const x=(rng()*N)|0,y=(rng()*N)|0,z=(rng()*N)|0;pivots.add(x+','+y+','+z);
+    }
+    const startCell=[cx,cx,cx];const startOri=0;
+    const {cellBest}=solveBFS(open,N,pivots,startCell,startOri);
+    // pick goal = reachable cell with max play-distance
+    let best=null,bestD=-1;
+    for(const [cell,d] of cellBest){if(d>bestD){bestD=d;best=cell;}}
+    const minWanted = N<=3?4:(N<=5?9:12);
+    if(best && bestD>=minWanted){
+      const goal=best.split(',').map(Number);
+      return {N,open,pivots,startCell,startOri,goal,seed:seed+attempt*7919,par:bestD};
+    }
+  }
+  // fallback (shouldn't happen): corner goal
+  const rng=makeRng(seed);const open=genMaze(N,rng);const cx=N/2|0;
+  const pivots=new Set([cx+','+cx+','+cx]);
+  return {N,open,pivots,startCell:[cx,cx,cx],startOri:0,goal:[0,0,0],seed,par:0};
+}
+
+/* =====================================================================
+   RENDERING (Three.js)
+   ===================================================================== */
+let scene,camera,renderer,cubeGroup,trailGroup,raf;
+let level,N,spacing=1.0;
+let R,p; // current orientation matrix, player cell
+let visited=new Set();   // physical cells "x,y,z" the player has occupied
+let trail=[];            // ordered list of cells, for drawing path connectors
+let moves=0,rots=0,won=false,lost=false,is2D=false;
+let auto=false,autoStates=[],autoIdx=0;   // auto-solve playback state
+let moveLimit=0,currentSeed=0;            // budget = how many actions you may spend
+const LIMIT_FACTOR=2.5;                    // budget ≈ 2.5× the optimal solve
+let curSize=5;
+const host=document.getElementById('scene');
+
+// camera orbit
+let orbit={az:0.7,el:0.62,dist:0,drag:false,px:0,py:0};
+let animRot=null,animMove=null;
+
+const COL={
+  floor:0x223066, floorEdge:0x4a5db5, wall:0x6f7fd6, wallTop:0x9fb0ff,
+  ghost:0x1b2447, ghostEdge:0x2c3a72, player:0xffd45a, goal:0x5affa1, pivot:0xc77dff,
+};
+
+function center(){return (N-1)/2;}
+function cubeToWorld(R,c){ // map cube cell -> world position (centered), scaled
+  const v=[c[0]-center(),c[1]-center(),c[2]-center()];
+  const w=matVec(R,v);
+  return new THREE.Vector3(w[0]*spacing,w[1]*spacing,w[2]*spacing);
+}
+
+function initThree(){
+  scene=new THREE.Scene();
+  scene.fog=new THREE.FogExp2(0x0c1020,0.045);
+  const w=window.innerWidth,h=window.innerHeight;
+  camera=new THREE.PerspectiveCamera(48,w/h,0.1,200);
+  renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(w,h);host.appendChild(renderer.domElement);
+
+  const amb=new THREE.AmbientLight(0x90a0ff,0.55);scene.add(amb);
+  const key=new THREE.DirectionalLight(0xffffff,0.9);key.position.set(6,12,8);scene.add(key);
+  const rim=new THREE.DirectionalLight(0x6a8cff,0.5);rim.position.set(-8,4,-6);scene.add(rim);
+
+  cubeGroup=new THREE.Group();scene.add(cubeGroup);
+  trailGroup=new THREE.Group();cubeGroup.add(trailGroup);
+
+  // orbit controls
+  const el=renderer.domElement;
+  el.addEventListener('pointerdown',e=>{orbit.drag=true;orbit.px=e.clientX;orbit.py=e.clientY;});
+  window.addEventListener('pointerup',()=>orbit.drag=false);
+  window.addEventListener('pointermove',e=>{
+    if(!orbit.drag||is2D)return;
+    orbit.az -=(e.clientX-orbit.px)*0.008;
+    orbit.el =Math.max(0.08,Math.min(1.45,orbit.el-(e.clientY-orbit.py)*0.006));
+    orbit.px=e.clientX;orbit.py=e.clientY;
+  });
+  el.addEventListener('wheel',e=>{e.preventDefault();orbit.el=Math.max(0.08,Math.min(1.45,orbit.el));},{passive:false});
+  window.addEventListener('resize',onResize);
+}
+function onResize(){
+  const w=window.innerWidth,h=window.innerHeight;
+  if(is2D){setupOrtho();}else{camera.aspect=w/h;camera.updateProjectionMatrix();}
+  renderer.setSize(w,h);
+}
+
+// ---------- build mesh for current orientation ----------
+let dynamic=[]; // disposables
+function clearDynamic(){for(const o of dynamic){cubeGroup.remove(o);
+  if(o.geometry)o.geometry.dispose();if(o.material){o.material.dispose&&o.material.dispose();}}dynamic=[];}
+
+function tileMesh(size,color,opacity,emissive){
+  const g=new THREE.BoxGeometry(size,0.08,size);
+  const m=new THREE.MeshStandardMaterial({color,transparent:opacity<1,opacity,
+    emissive:emissive||0x000000,emissiveIntensity:emissive?0.55:0,roughness:.8,metalness:.05});
+  return new THREE.Mesh(g,m);
+}
+function edgeBox(size,h,color,opacity){
+  const g=new THREE.BoxGeometry(size,h,size);
+  const e=new THREE.EdgesGeometry(g);
+  const m=new THREE.LineBasicMaterial({color,transparent:opacity<1,opacity});
+  return new THREE.LineSegments(e,m);
+}
+
+function buildScene(){
+  clearDynamic();
+  const up=upAxisOf(R);const upVal=p[up.axis];
+  // outer cube wireframe
+  const cubeSize=N*spacing;
+  const wf=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(cubeSize,cubeSize,cubeSize)),
+     new THREE.LineBasicMaterial({color:0x3a4677,transparent:true,opacity:.35}));
+  cubeGroup.add(wf);dynamic.push(wf);
+
+  const tile=0.9*spacing;
+  // iterate all cells; render active-layer cells solid, others as faint ghosts
+  for(let x=0;x<N;x++)for(let y=0;y<N;y++)for(let z=0;z<N;z++){
+    const c=[x,y,z];
+    const inLayer=(c[up.axis]===upVal);
+    const wpos=cubeToWorld(R,c);
+    if(inLayer){
+      const isPivot=level.pivots.has(x+','+y+','+z);
+      const isGoal=(x===level.goal[0]&&y===level.goal[1]&&z===level.goal[2]);
+      const col=isGoal?COL.goal:(isPivot?COL.pivot:COL.floor);
+      const t=tileMesh(tile,col,1,(isGoal||isPivot)?col:0);
+      t.position.copy(wpos);cubeGroup.add(t);dynamic.push(t);
+      const eb=edgeBox(tile,0.08,isGoal?COL.goal:(isPivot?COL.pivot:COL.floorEdge),.9);
+      eb.position.copy(wpos);cubeGroup.add(eb);dynamic.push(eb);
+      // walls: for each in-plane neighbor that's CLOSED or out of bounds, draw a wall
+      for(const hd of horizDirs(R)){
+        const nc=[x+hd[0],y+hd[1],z+hd[2]];
+        const oob=(nc[0]<0||nc[1]<0||nc[2]<0||nc[0]>=N||nc[1]>=N||nc[2]>=N);
+        const blocked = oob || !isOpen(level.open,N,c,hd);
+        if(!blocked)continue;
+        const worldDir=matVec(R,hd); // world direction of this wall
+        const wallMesh=new THREE.Mesh(
+          new THREE.BoxGeometry(tile*1.02,0.42,0.07),
+          new THREE.MeshStandardMaterial({color:COL.wall,emissive:COL.wall,emissiveIntensity:.12,roughness:.6}));
+        const mid=wpos.clone().add(new THREE.Vector3(worldDir[0],worldDir[1],worldDir[2]).multiplyScalar(tile*0.5));
+        mid.y+=0.21;wallMesh.position.copy(mid);
+        wallMesh.lookAt(mid.clone().add(new THREE.Vector3(worldDir[0],0,worldDir[2])));
+        cubeGroup.add(wallMesh);dynamic.push(wallMesh);
+      }
+    } else {
+      // ghost tile (faint), so you sense the full cube of layers
+      const g=tileMesh(tile*0.92,COL.ghost,0.13,0);
+      g.position.copy(wpos);cubeGroup.add(g);dynamic.push(g);
+      // mark goal even when in another layer, faint
+      if(x===level.goal[0]&&y===level.goal[1]&&z===level.goal[2]){
+        const gm=tileMesh(tile*0.5,COL.goal,0.4,COL.goal);gm.position.copy(wpos);
+        cubeGroup.add(gm);dynamic.push(gm);
+      }
+    }
+  }
+  addPlayer();
+  rebuildTrail();
+  updateHUD();
+}
+let playerObj=null;
+
+// Yellow "explored" path. Drawn in its own group so a single move can refresh
+// it without rebuilding the whole maze. Only cells in the currently-visible
+// layer are shown; connectors join consecutive steps that share that layer.
+function clearTrail(){
+  while(trailGroup.children.length){const c=trailGroup.children.pop();
+    if(c.geometry)c.geometry.dispose();if(c.material&&c.material.dispose)c.material.dispose();}
+}
+function rebuildTrail(){
+  clearTrail();
+  if(animRot)return;                 // spin draws its own faint version
+  drawPath(false);
+}
+// Yellow route LINE: thin raised segments joining the squares the ball has
+// actually walked, with small joints. A bright line reads clearly as a path and
+// is visually distinct from the flat purple pivot tiles. Non-spin: only segments
+// whose endpoints are both in the visible layer. Spin: the whole 3D route, faint.
+function addSeg(wa,wb,opacity,thick){
+  const len=wa.distanceTo(wb);if(len<1e-4)return;
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(thick,thick,len,8),
+    new THREE.MeshStandardMaterial({color:0xffe14d,emissive:0xffd000,
+      emissiveIntensity:.75,transparent:opacity<1,opacity,roughness:.3}));
+  m.position.copy(wa.clone().add(wb).multiplyScalar(0.5));
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),wb.clone().sub(wa).normalize());
+  trailGroup.add(m);
+}
+function drawPath(spin){
+  const up=upAxisOf(R);const upVal=p[up.axis];
+  const op=spin?0.4:0.96, thick=0.055*spacing, lift=0.17;
+  const wp=c=>{const w=cubeToWorld(R,c);w.y+=lift;return w;};
+  for(let i=1;i<trail.length;i++){
+    const a=trail[i-1],b=trail[i];
+    if(a[0]===b[0]&&a[1]===b[1]&&a[2]===b[2])continue;
+    if(!spin&&(a[up.axis]!==upVal||b[up.axis]!==upVal))continue;
+    addSeg(wp(a),wp(b),op,thick);
+  }
+  for(const k of visited){                 // rounded joints / lone-cell markers
+    const c=k.split(',').map(Number);
+    if(!spin&&c[up.axis]!==upVal)continue;
+    const s=new THREE.Mesh(new THREE.SphereGeometry(thick*1.6,12,10),
+      new THREE.MeshStandardMaterial({color:0xffe14d,emissive:0xffd000,
+        emissiveIntensity:.75,transparent:op<1,opacity:op,roughness:.3}));
+    s.position.copy(wp(c));trailGroup.add(s);
+  }
+}
+function addPlayer(){
+  const pg=new THREE.Group();
+  const ball=new THREE.Mesh(new THREE.SphereGeometry(0.26,24,18),
+    new THREE.MeshStandardMaterial({color:COL.player,emissive:COL.player,emissiveIntensity:.5,roughness:.3}));
+  ball.position.y=0.28;pg.add(ball);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(0.34,0.03,8,28),
+    new THREE.MeshStandardMaterial({color:COL.player,emissive:COL.player,emissiveIntensity:.6}));
+  ring.rotation.x=Math.PI/2;ring.position.y=0.06;pg.add(ring);
+  pg.position.copy(cubeToWorld(R,p));
+  cubeGroup.add(pg);dynamic.push(pg);
+  playerObj=pg;
+}
+
+// Uniform translucent cube used ONLY during a rotation, so the bright
+// "active layer" doesn't jump from one plane to another mid-turn. Every
+// cell looks the same (goal/pivots stay tinted), so the spin reads as one
+// solid object turning; the sliced maze view is rebuilt once it settles.
+function buildSpinScene(){
+  clearDynamic();
+  const cubeSize=N*spacing;
+  const wf=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(cubeSize,cubeSize,cubeSize)),
+     new THREE.LineBasicMaterial({color:0x4a5db5,transparent:true,opacity:.5}));
+  cubeGroup.add(wf);dynamic.push(wf);
+  const tile=0.9*spacing;
+  for(let x=0;x<N;x++)for(let y=0;y<N;y++)for(let z=0;z<N;z++){
+    const isPivot=level.pivots.has(x+','+y+','+z);
+    const isGoal=(x===level.goal[0]&&y===level.goal[1]&&z===level.goal[2]);
+    const col=isGoal?COL.goal:(isPivot?COL.pivot:COL.floor);
+    const op=isGoal?0.95:(isPivot?0.8:0.42);
+    const t=tileMesh(tile*0.94,col,op,(isGoal||isPivot)?col:0);
+    t.position.copy(cubeToWorld(R,[x,y,z]));cubeGroup.add(t);dynamic.push(t);
+  }
+  // Keep the explored route visible inside the spinning cube as a faint
+  // yellow line through all layers, matching the translucent look.
+  clearTrail();
+  drawPath(true);
+  addPlayer();
+}
+
+// ---------- camera ----------
+function setupPersp(){camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();}
+function setupOrtho(){
+  const N0=N*spacing;const aspect=window.innerWidth/window.innerHeight;
+  const s=N0*0.62;
+  camera=new THREE.OrthographicCamera(-s*aspect,s*aspect,s,-s,0.1,200);
+  camera.position.set(0,12,0.001);camera.lookAt(0,0,0);
+}
+function updateCamera(){
+  if(is2D){camera.position.set(0,14,0.001);camera.up.set(0,0,-1);camera.lookAt(0,0,0);return;}
+  const d=N*spacing*1.7+3;
+  camera.position.set(
+    d*Math.cos(orbit.el)*Math.sin(orbit.az),
+    d*Math.sin(orbit.el),
+    d*Math.cos(orbit.el)*Math.cos(orbit.az));
+  camera.up.set(0,1,0);camera.lookAt(0,0,0);
+}
+
+// ---------- animation loop ----------
+const ROT_DUR=640, MOVE_DUR=150; // ms — time-based so it's smooth at any refresh rate
+let lastT=(typeof performance!=='undefined'?performance.now():Date.now());
+function animate(){
+  raf=requestAnimationFrame(animate);
+  const now=performance.now();
+  let dt=now-lastT; lastT=now;
+  if(dt>60)dt=60; // clamp big gaps (tab was backgrounded) so nothing jumps
+  // rotation animation: slerp cubeGroup quaternion identity->target, time-based
+  if(animRot){
+    animRot.el+=dt;
+    const t=Math.min(1,animRot.el/ROT_DUR);
+    const e=smoother(t);
+    THREE.Quaternion.slerp(animRot.q0,animRot.q1,cubeGroup.quaternion,e);
+    if(t>=1){
+      cubeGroup.quaternion.identity();
+      R=animRot.newR;animRot=null;   // clear BEFORE rebuild so the trail draws
+      buildScene();
+      checkRotHint();checkBudget();   // a rotation spends budget too
+    }
+  }
+  // move animation
+  if(animMove&&playerObj){
+    animMove.el+=dt;
+    const t=Math.min(1,animMove.el/MOVE_DUR);
+    const e=smoother(t);
+    playerObj.position.lerpVectors(animMove.from,animMove.to,e);
+    if(t>=1){animMove=null;afterMove();}
+  }
+  // drive auto-solve: take the next step whenever nothing is animating
+  if(auto&&!animRot&&!animMove&&!won)advanceAuto();
+  updateCamera();
+  renderer.render(scene,camera);
+}
+// quintic smootherstep: zero velocity AND acceleration at both ends -> very smooth
+function smoother(t){return t*t*t*(t*(t*6-15)+10);}
+
+/* =====================================================================
+   GAME ACTIONS
+   ===================================================================== */
+function startLevel(size,seed){
+  curSize=size;N=size;
+  level=buildLevel(N, seed||((Math.random()*1e9)|0));
+  R=ORIENTS.list[level.startOri];p=level.startCell.slice();
+  currentSeed=level.seed;
+  moveLimit=Math.max(level.par+8, Math.round(level.par*LIMIT_FACTOR));
+  visited=new Set([p.join(',')]);trail=[p.slice()];
+  moves=0;rots=0;won=false;lost=false;animRot=null;animMove=null;
+  auto=false;autoStates=[];autoIdx=0;setSolveLabel(false);
+  cubeGroup.quaternion.identity();
+  document.getElementById('toast').classList.remove('lose');
+  buildScene();checkRotHint();hideToast();
+  document.getElementById('hGoal').textContent='find it';
+}
+
+function tryMove(worldDir){
+  if(won||lost||auto||animRot||animMove)return;
+  const Rt=matT(R);const hd=matVec(Rt,worldDir).map(Math.round);
+  const nc=[p[0]+hd[0],p[1]+hd[1],p[2]+hd[2]];
+  if(nc[0]<0||nc[1]<0||nc[2]<0||nc[0]>=N||nc[1]>=N||nc[2]>=N)return;
+  if(!isOpen(level.open,N,p,hd))return; // wall
+  applyMove(nc);
+}
+function applyMove(nc){           // commit a (known-valid) step + start its glide
+  const from=playerObj.position.clone();
+  p=nc;moves++;
+  animMove={el:0,from,to:cubeToWorld(R,p)};
+}
+function afterMove(){
+  playerObj.position.copy(cubeToWorld(R,p));
+  visited.add(p.join(','));   // mark visited only now that the ball has arrived
+  trail.push(p.slice());      // ordered route, for drawing the yellow line
+  rebuildTrail();
+  updateHUD();checkRotHint();
+  if(p[0]===level.goal[0]&&p[1]===level.goal[1]&&p[2]===level.goal[2]){win();return;}
+  checkBudget();
+}
+function actionsUsed(){return moves+rots;}
+function checkBudget(){
+  if(won||lost||auto)return;          // auto-solve is exempt — it's the bail-out
+  if(actionsUsed()>=moveLimit)lose();
+}
+function lose(){
+  lost=true;
+  document.getElementById('toast').classList.add('lose');
+  document.getElementById('toastTitle').textContent='Out of moves';
+  document.getElementById('toastBody').textContent=
+    `You spent your ${moveLimit}-action budget. The optimal solve is ${level.par}. `+
+    `Retry the same cube, start a new one, or hit Auto-solve to see the route.`;
+  document.getElementById('hGoal').textContent='out of moves';
+  showToast();
+}
+
+function tryRotate(G){
+  if(won||lost||auto||animRot||animMove)return;
+  if(!level.pivots.has(p[0]+','+p[1]+','+p[2]))return; // only on pivots
+  applyRotation(G);
+}
+function applyRotation(G){
+  const newR=matMul(G,R);
+  // Swap to the uniform spin-cube (baked at current R) so no single layer is
+  // highlighted while turning. Animate group identity -> G; since geometry is
+  // baked with R, group=G applied to geom(R) == geom(G*R) == geom(newR), so at
+  // t=1 the cells already sit exactly where the new sliced view rebuilds them.
+  buildSpinScene();
+  const qG=quatFromMat(G);
+  animRot={el:0,q0:new THREE.Quaternion(0,0,0,1),q1:qG,newR};
+  rots++;updateHUD();
+  document.getElementById('rotHint').classList.remove('show');
+}
+function quatFromMat(M){
+  const m=new THREE.Matrix4();
+  m.set(M[0][0],M[0][1],M[0][2],0, M[1][0],M[1][1],M[1][2],0, M[2][0],M[2][1],M[2][2],0, 0,0,0,1);
+  const q=new THREE.Quaternion();q.setFromRotationMatrix(m);return q;
+}
+
+function win(){
+  won=true;auto=false;setSolveLabel(false);
+  document.getElementById('toast').classList.remove('lose');
+  document.getElementById('toastTitle').textContent='Solved! 🎉';
+  const used=actionsUsed();
+  const tag = used<=level.par ? ' — optimal! 🏆' : ` (best possible: ${level.par})`;
+  document.getElementById('toastBody').textContent=
+    `${moves} moves · ${rots} rotations = ${used} actions${tag}`;
+  document.getElementById('hGoal').textContent='reached ✓';
+  showToast();
+}
+
+/* =====================================================================
+   AUTO-SOLVE  —  BFS over (cell, orientation) from the player's CURRENT
+   state to the goal, then replay the exact moves + rotations.
+   ===================================================================== */
+function solvePath(startCell,startOri){
+  const key=(c,o)=>c.join(',')+'|'+o;
+  const prev=new Map();prev.set(key(startCell,startOri),null);
+  const q=[{c:startCell,o:startOri}];let head=0,end=null;
+  while(head<q.length){
+    const {c,o}=q[head++];
+    if(c[0]===level.goal[0]&&c[1]===level.goal[1]&&c[2]===level.goal[2]){end={c,o};break;}
+    const Rm=ORIENTS.list[o];
+    for(const hd of horizDirs(Rm)){
+      const nc=[c[0]+hd[0],c[1]+hd[1],c[2]+hd[2]];
+      if(nc[0]<0||nc[1]<0||nc[2]<0||nc[0]>=N||nc[1]>=N||nc[2]>=N)continue;
+      if(!isOpen(level.open,N,c,hd))continue;
+      const nk=key(nc,o);if(prev.has(nk))continue;
+      prev.set(nk,{c,o});q.push({c:nc,o});
+    }
+    if(level.pivots.has(c.join(','))){
+      for(const G of ROT_OPS){
+        const no=orientIndex(matMul(G,Rm));const nk=key(c,no);
+        if(prev.has(nk))continue;prev.set(nk,{c,o});q.push({c,o:no});
+      }
+    }
+  }
+  if(!end)return null;
+  const path=[];let s=end;
+  while(s){path.push({cell:s.c,ori:s.o});s=prev.get(key(s.c,s.o));}
+  return path.reverse();   // [start ... goal]
+}
+function setSolveLabel(active){
+  document.getElementById('solve').textContent=active?'⏹ Stop solving':'🧭 Stuck? Auto-solve';
+  document.getElementById('solve').classList.toggle('active',active);
+}
+function toggleAutoSolve(){
+  if(auto){auto=false;setSolveLabel(false);return;}
+  if(won)return;
+  const path=solvePath(p.slice(),orientIndex(R));
+  if(!path||path.length<2){return;}   // already at goal / nothing to do
+  autoStates=path;autoIdx=0;auto=true;setSolveLabel(true);
+}
+function advanceAuto(){               // called from the loop when idle
+  if(!auto)return;
+  if(autoIdx>=autoStates.length-1){auto=false;setSolveLabel(false);return;}
+  const cur=autoStates[autoIdx],nxt=autoStates[++autoIdx];
+  const moved=(nxt.cell[0]!==cur.cell[0]||nxt.cell[1]!==cur.cell[1]||nxt.cell[2]!==cur.cell[2]);
+  if(moved){applyMove(nxt.cell.slice());}
+  else{applyRotation(matMul(ORIENTS.list[nxt.ori],matT(ORIENTS.list[cur.ori])));}
+}
+
+// ---------- HUD ----------
+function updateHUD(){
+  const up=upAxisOf(R);const axisName=['X','Y','Z'][up.axis];
+  document.getElementById('hLayer').textContent=`${p[up.axis]+1} / ${N}`;
+  document.getElementById('hAxis').textContent=`${axisName}${up.sign>0?'+':'−'}`;
+  document.getElementById('hMoves').textContent=moves;
+  document.getElementById('hRots').textContent=rots;
+  document.getElementById('hPar').textContent=level?level.par:'–';
+  const left=moveLimit-actionsUsed();
+  const hb=document.getElementById('hBudget');
+  hb.textContent=Math.max(0,left)+' / '+moveLimit;
+  hb.style.color = left<=3 ? '#ff6b6b' : (left<=Math.ceil(moveLimit*0.25) ? '#ffd45a' : '');
+}
+function checkRotHint(){
+  const onPivot=level.pivots.has(p[0]+','+p[1]+','+p[2]);
+  document.getElementById('rotHint').classList.toggle('show',onPivot&&!won);
+}
+function showToast(){document.getElementById('toast').classList.add('show');}
+function hideToast(){document.getElementById('toast').classList.remove('show');}
+
+// ---------- view toggle ----------
+function setView(v){
+  is2D=(v==='2d');
+  document.getElementById('view2d').classList.toggle('active',is2D);
+  document.getElementById('view3d').classList.toggle('active',!is2D);
+  if(is2D)setupOrtho();else{camera=new THREE.PerspectiveCamera(48,window.innerWidth/window.innerHeight,0.1,200);}
+  buildScene();
+}
+
+/* =====================================================================
+   INPUT
+   ===================================================================== */
+window.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();
+  switch(k){
+    case 'w': case 'arrowup':    tryMove([0,0,-1]);break;
+    case 's': case 'arrowdown':  tryMove([0,0,1]); break;
+    case 'a': case 'arrowleft':  tryMove([-1,0,0]);break;
+    case 'd': case 'arrowright':  tryMove([1,0,0]); break;
+    case 'q': tryRotate(RZ); break;   // roll left
+    case 'e': tryRotate(RZn);break;   // roll right
+    case 'r': tryRotate(RX); break;   // tumble forward
+    case 'f': tryRotate(RXn);break;   // tumble back
+    case 'v': setView(is2D?'3d':'2d');break;
+  }
+});
+document.getElementById('view3d').onclick=()=>setView('3d');
+document.getElementById('view2d').onclick=()=>setView('2d');
+document.getElementById('restart').onclick=()=>startLevel(curSize);
+document.getElementById('solve').onclick=toggleAutoSolve;
+document.getElementById('toastBtn').onclick=()=>startLevel(curSize);
+document.getElementById('toastRetry').onclick=()=>startLevel(curSize,currentSeed);
+document.querySelectorAll('[data-size]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('[data-size]').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');startLevel(+b.dataset.size);
+});
+
+// ---------- boot ----------
+initThree();
+startLevel(5);
+animate();
+</script>
+</body>
+</html>

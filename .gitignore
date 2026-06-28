@@ -1,0 +1,10 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Node (only verify.js uses node; no deps, but just in case)
+node_modules/
+npm-debug.log*
