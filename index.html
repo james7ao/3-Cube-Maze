@@ -2,99 +2,587 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Cube Maze</title>
 <style>
   :root{
-    --bg:#0c1020; --panel:rgba(18,24,46,.82); --ink:#e8ecff; --muted:#9aa3c7;
-    --accent:#5ad1ff; --accent2:#ffd45a; --good:#5affa1; --pivot:#c77dff;
+    --bg:#07091a; --panel:rgba(10,15,35,.93); --border:rgba(60,180,240,.12);
+    --border-hi:rgba(60,180,240,.32); --ink:#dde4f8; --muted:#6b78a8; --dim:#3d4870;
+    --accent:#35c3f0; --accent2:#f5a623; --good:#33d17a; --pivot:#b866f5; --danger:#f56262;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:radial-gradient(1200px 800px at 70% -10%,#1a2350,#0c1020 60%);color:var(--ink);
-    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
+  html,body{
+    margin:0;height:100%;
+    background:
+      radial-gradient(ellipse 900px 700px at 78% -8%,#0e1a42,transparent),
+      radial-gradient(ellipse 700px 900px at -8% 68%,#0a1030,transparent),
+      #07091a;
+    color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    overflow:hidden;
+    overscroll-behavior:none;
+    -webkit-tap-highlight-color:transparent;
+  }
   #scene{position:fixed;inset:0;z-index:0}
   #scene canvas{display:block;touch-action:none}
-  .panel{position:fixed;z-index:10;background:var(--panel);backdrop-filter:blur(8px);border:1px solid rgba(120,140,220,.25);
-    border-radius:14px;padding:14px 16px;box-shadow:0 10px 40px rgba(0,0,0,.4)}
-  #hud{top:14px;left:14px;min-width:210px;font-variant-numeric:tabular-nums}
-  #hud h1{margin:0 0 8px;font-size:15px;letter-spacing:.5px}
-  #hud .row{display:flex;justify-content:space-between;gap:18px;font-size:13px;color:var(--muted);padding:2px 0}
-  #hud .row b{color:var(--ink);font-weight:600}
-  #help{bottom:14px;left:14px;max-width:340px;font-size:12.5px;line-height:1.55;color:var(--muted)}
-  #help h2{margin:0 0 6px;font-size:13px;color:var(--ink);letter-spacing:.4px}
-  kbd{display:inline-block;min-width:18px;text-align:center;padding:1px 6px;margin:0 1px;border-radius:6px;
-    background:#222a4d;border:1px solid #3a4677;color:#dbe2ff;font-size:11px;font-family:inherit}
-  .pill{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600}
-  .pill.rot{background:rgba(199,125,255,.18);color:#d9b3ff;border:1px solid rgba(199,125,255,.4)}
-  #ctrls{position:fixed;z-index:20;top:14px;right:14px;display:flex;flex-direction:column;gap:8px;align-items:stretch}
-  .btn{cursor:pointer;border:1px solid #3a4677;background:#1a2245;color:var(--ink);border-radius:10px;
-    padding:8px 12px;font-size:13px;font-family:inherit;transition:.15s;text-align:center}
-  .btn:hover{background:#243064;border-color:#5566aa}
-  .btn.active{background:var(--accent);color:#06243a;border-color:var(--accent)}
+
+  /* ── Panel base ─────────────────────────── */
+  .panel{
+    position:fixed;z-index:10;
+    background:var(--panel);backdrop-filter:blur(14px) saturate(1.2);
+    border:1px solid var(--border);border-radius:14px;
+    padding:14px 16px;
+    box-shadow:0 8px 32px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.04);
+  }
+
+  /* ── HUD ────────────────────────────────── */
+  #hud{top:max(16px,calc(env(safe-area-inset-top) + 8px));left:max(16px,calc(env(safe-area-inset-left) + 8px));min-width:188px}
+  #hudTitle{
+    font-size:9.5px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;
+    color:var(--accent);opacity:.72;margin:0 0 10px;
+  }
+  .hrow{
+    display:flex;justify-content:space-between;align-items:center;
+    gap:14px;padding:3.5px 0;
+    border-bottom:1px solid rgba(55,65,110,.22);font-size:12.5px;
+  }
+  .hrow:last-child{border-bottom:none}
+  .hl{color:var(--muted)}
+  .hv{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+
+  /* ── Controls ───────────────────────────── */
+  #ctrls{
+    position:fixed;z-index:20;
+    top:max(16px,calc(env(safe-area-inset-top) + 8px));
+    right:max(16px,calc(env(safe-area-inset-right) + 8px));
+    display:flex;flex-direction:column;gap:5px;align-items:stretch;
+    background:var(--panel);backdrop-filter:blur(14px) saturate(1.2);
+    border:1px solid var(--border);border-radius:14px;padding:12px;
+    box-shadow:0 8px 32px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .ctrl-label{
+    font-size:9.5px;font-weight:700;letter-spacing:1.4px;
+    text-transform:uppercase;color:var(--dim);padding:2px 0;margin-top:2px;
+  }
+  .ctrl-divider{height:1px;background:rgba(55,65,110,.28);margin:3px 0}
+  #ctrlsHeader{
+    display:flex;justify-content:space-between;align-items:center;
+    cursor:pointer;padding:2px 0;gap:16px;
+    -webkit-tap-highlight-color:transparent;user-select:none;
+  }
+  #ctrlsHeaderLabel{
+    font-size:9.5px;font-weight:700;letter-spacing:1.4px;
+    text-transform:uppercase;color:var(--dim);
+  }
+  #ctrlsChevron{
+    font-size:13px;color:var(--dim);line-height:1;
+    transition:transform .2s;display:inline-block;
+  }
+  #ctrls.collapsed #ctrlsChevron{transform:rotate(-90deg)}
+  #ctrlsBody{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+  #ctrls.collapsed #ctrlsBody{display:none}
+
+  /* ── Buttons ────────────────────────────── */
+  .btn{
+    cursor:pointer;border:1px solid rgba(60,80,140,.42);
+    background:rgba(16,23,55,.72);color:var(--muted);
+    border-radius:8px;padding:7px 12px;font-size:12.5px;
+    font-family:inherit;transition:.12s;text-align:center;
+  }
+  .btn:hover{background:rgba(28,40,88,.78);border-color:rgba(60,180,240,.32);color:var(--ink)}
+  .btn.active{background:rgba(53,195,240,.14);border-color:rgba(53,195,240,.48);color:var(--accent)}
   .seg{display:flex;gap:4px}
-  .seg .btn{flex:1;padding:6px 0}
-  #toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);opacity:0;pointer-events:none;
-    text-align:center;padding:26px 40px;border-radius:18px;background:rgba(10,16,36,.92);border:1px solid rgba(120,255,180,.4);
-    transition:.35s;box-shadow:0 20px 80px rgba(0,0,0,.6)}
-  #toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
-  #toast h2{margin:0 0 6px;font-size:26px;color:var(--good)}
-  #toast.lose{border-color:rgba(255,107,107,.5)}
-  #toast.lose h2{color:#ff6b6b}
-  #toast p{margin:0 0 14px;color:var(--muted);font-size:14px}
-  #rotHint{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);opacity:0;transition:.2s;
-    background:rgba(199,125,255,.16);border:1px solid rgba(199,125,255,.5);color:#e9d6ff;
-    padding:7px 14px;border-radius:999px;font-size:12.5px;pointer-events:none}
+  .seg .btn{flex:1;padding:6px 0;font-size:12px}
+  .btn-primary{
+    background:rgba(53,195,240,.13);border-color:rgba(53,195,240,.42);
+    color:var(--accent);font-weight:600;
+  }
+  .btn-primary:hover{background:rgba(53,195,240,.22);border-color:rgba(53,195,240,.68);color:#80eafc}
+  .btn-ghost{
+    border-color:transparent;background:transparent;
+    color:var(--dim);font-size:11.5px;padding:5px 8px;
+  }
+  .btn-ghost:hover{background:rgba(255,255,255,.04);border-color:rgba(60,80,140,.32);color:var(--muted)}
+
+  /* ── Help ───────────────────────────────── */
+  #help{bottom:16px;left:16px;max-width:312px;font-size:12px;line-height:1.6;color:var(--muted)}
+  #helpTitle{
+    font-size:9.5px;font-weight:700;letter-spacing:1.4px;
+    text-transform:uppercase;color:var(--dim);margin:0 0 8px;
+  }
+  kbd{
+    display:inline-block;min-width:18px;text-align:center;
+    padding:1px 5px;margin:0 1px;border-radius:5px;
+    background:rgba(20,30,68,.9);border:1px solid rgba(60,80,160,.52);
+    border-bottom-width:2px;color:var(--ink);font-size:10.5px;font-family:inherit;
+  }
+  .pill{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600}
+  .pill.rot{background:rgba(184,102,245,.15);color:#d09ef7;border:1px solid rgba(184,102,245,.38)}
+
+  /* ── Rotation hint ──────────────────────── */
+  #rotHint{
+    position:fixed;left:50%;bottom:max(20px,calc(env(safe-area-inset-bottom) + 12px));transform:translateX(-50%);
+    opacity:0;transition:opacity .25s;
+    background:rgba(184,102,245,.1);border:1px solid rgba(184,102,245,.4);
+    color:#d09ef7;padding:7px 16px;border-radius:999px;
+    font-size:12px;pointer-events:none;white-space:nowrap;
+    box-shadow:0 4px 20px rgba(184,102,245,.12);
+  }
   #rotHint.show{opacity:1}
+
+  /* ── Toast ──────────────────────────────── */
+  #toast{
+    position:fixed;top:50%;left:50%;
+    transform:translate(-50%,-50%) scale(.92);
+    opacity:0;pointer-events:none;text-align:center;
+    padding:32px 44px 28px;border-radius:20px;
+    background:rgba(7,10,26,.97);
+    border:1px solid rgba(51,209,122,.28);
+    transition:opacity .28s,transform .28s;
+    box-shadow:0 24px 80px rgba(0,0,0,.75),0 0 60px rgba(51,209,122,.06);
+    min-width:280px;
+  }
+  #toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+  #toast h2{margin:0 0 8px;font-size:24px;font-weight:800;color:var(--good);letter-spacing:.4px}
+  #toast p{margin:0 0 20px;color:var(--muted);font-size:13.5px;line-height:1.55}
+  #toast.lose{border-color:rgba(245,98,98,.28);box-shadow:0 24px 80px rgba(0,0,0,.75),0 0 60px rgba(245,98,98,.06)}
+  #toast.lose h2{color:var(--danger)}
+  #toastNext{display:none}
+  #toast.tutorial #toastRetry,#toast.tutorial #toastBtn{display:none}
+  #toast.tutorial #toastNext{display:inline-block}
+  .toast-btns{display:flex;gap:8px;justify-content:center}
+
+  /* ── Tutorial overlay ───────────────────── */
+  #tutOverlay{
+    position:fixed;inset:0;z-index:60;
+    display:none;align-items:center;justify-content:center;
+    pointer-events:none;
+    background:rgba(5,7,20,.62);backdrop-filter:blur(6px);
+  }
+  #tutOverlay.show{display:flex}
+  #tutCard{
+    pointer-events:auto;max-width:420px;width:90%;text-align:left;
+    background:rgba(9,13,32,.97);
+    border:1px solid var(--border-hi);border-radius:20px;
+    padding:32px 36px 28px;
+    box-shadow:0 40px 120px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.03);
+  }
+  #tutWelcomeTop{
+    display:flex;align-items:center;gap:14px;margin:0 0 20px;
+    padding-bottom:16px;border-bottom:1px solid var(--border);
+  }
+  #tutCubeIcon{
+    width:44px;height:44px;border-radius:12px;flex-shrink:0;
+    background:linear-gradient(140deg,rgba(53,195,240,.22),rgba(184,102,245,.18));
+    border:1px solid var(--border-hi);
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;line-height:1;
+  }
+  #tutWelcomeHeading{margin:0}
+  #tutWelcomeLabel{
+    font-size:9.5px;font-weight:700;letter-spacing:1.8px;
+    text-transform:uppercase;color:var(--accent);opacity:.72;margin:0 0 3px;
+  }
+  #tutWelcomeTitle{
+    font-size:20px;font-weight:800;color:var(--ink);
+    margin:0;letter-spacing:.3px;line-height:1.1;
+  }
+  #tutCard p{margin:0 0 16px;font-size:13px;line-height:1.65;color:var(--muted)}
+  #tutMechanics{
+    margin:0 0 18px;border:1px solid var(--border);border-radius:10px;overflow:hidden;
+  }
+  .tut-mrow{
+    display:flex;align-items:center;gap:14px;
+    padding:9px 12px;font-size:12px;color:var(--muted);
+    border-bottom:1px solid var(--border);
+  }
+  .tut-mrow:last-child{border-bottom:none}
+  .tut-mkeys{display:flex;gap:3px;min-width:88px;flex-shrink:0}
+  #tutFooter{display:flex;align-items:center;gap:8px}
+  .tut-glow{
+    outline:2px solid var(--accent);outline-offset:5px;
+    box-shadow:0 0 18px rgba(53,195,240,.35);
+    transition:box-shadow .2s;border-radius:12px;
+  }
+
+  /* ── Tutorial banner ────────────────────── */
+  #tutBanner{
+    position:fixed;bottom:max(16px,calc(env(safe-area-inset-bottom) + 8px));left:50%;transform:translateX(-50%);
+    z-index:15;max-width:500px;width:calc(100% - 32px);display:none;
+  }
+  #tutBanner.show{display:block}
+  #tutBannerInner{
+    background:var(--panel);backdrop-filter:blur(14px) saturate(1.2);
+    border:1px solid rgba(53,195,240,.22);border-radius:12px;
+    padding:10px 14px;
+    box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 24px rgba(53,195,240,.05);
+  }
+  #tutBannerTop{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:5px}
+  #tutBannerLabel{
+    font-size:9.5px;font-weight:700;letter-spacing:1.4px;
+    text-transform:uppercase;color:var(--accent);
+  }
+  #tutSkipLink{
+    font-size:11px;color:var(--dim);cursor:pointer;
+    border:1px solid rgba(60,80,140,.32);border-radius:6px;padding:2px 8px;
+    transition:color .12s,border-color .12s;white-space:nowrap;
+  }
+  #tutSkipLink:hover{color:var(--muted);border-color:rgba(60,80,140,.62)}
+  #tutBannerBody{font-size:12.5px;line-height:1.5;color:var(--muted)}
   .muted{color:var(--muted)}
+
+  /* ── Main Menu ──────────────────────────── */
+  #mainMenu{
+    position:fixed;inset:0;z-index:40;
+    display:flex;align-items:center;justify-content:center;
+    background:
+      radial-gradient(ellipse 150% 110% at 50% 28%,rgba(12,24,70,.82),transparent),
+      rgba(7,9,26,.88);
+    backdrop-filter:blur(4px);
+    transition:opacity .4s;
+  }
+  #mainMenu.out{opacity:0;pointer-events:none}
+  #menuBox{
+    display:flex;flex-direction:column;align-items:center;gap:12px;
+    padding:44px 52px 36px;
+    background:rgba(8,12,30,.94);
+    border:1px solid var(--border);
+    border-top-color:rgba(60,180,240,.22);
+    border-radius:22px;
+    box-shadow:0 48px 120px rgba(0,0,0,.82),inset 0 1px 0 rgba(255,255,255,.04);
+    min-width:300px;text-align:center;
+  }
+  #menuEyebrow{
+    font-size:10px;font-weight:700;letter-spacing:2px;
+    text-transform:uppercase;color:var(--accent);opacity:.68;margin:0;
+  }
+  #menuTitle{
+    font-size:38px;font-weight:900;letter-spacing:4px;margin:4px 0 0;line-height:1;
+    background:linear-gradient(125deg,#5ad4ff 0%,#38c0f0 35%,#9b6cf5 72%,#c777ff 100%);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  }
+  #menuSub{font-size:12.5px;color:var(--muted);margin:2px 0 0;line-height:1.6;max-width:230px}
+  #menuDivider{width:100%;height:1px;background:var(--border)}
+  /* Endless mode badge inside menu button */
+  #endlessBadge{
+    display:block;font-size:10px;font-weight:400;
+    color:var(--muted);margin-top:3px;opacity:.8;letter-spacing:.2px;
+  }
+  /* Endless win toast — show Next, hide everything else */
+  #toast.endlessmode #toastStars{display:none}
+  #toast.endlessmode #toastMap{display:none}
+  #toast.endlessmode #toastRetry{display:none}
+  #toast.endlessmode #toastBtn{display:none}
+  #toast.endlessmode #toastNext{display:inline-block}
+  /* Always hide the in-game size selector (size is determined by game mode now) */
+  #sizeCtrl{display:none !important}
+  /* Boss level — pulsing red vignette border */
+  #bossOverlay{
+    position:fixed;inset:0;z-index:5;pointer-events:none;display:none;
+    border:3px solid rgba(255,40,40,0);
+    animation:bossPulse 1.2s ease-in-out infinite;
+  }
+  #bossOverlay.active{display:block}
+  @keyframes bossPulse{
+    0%,100%{box-shadow:inset 0 0 60px rgba(255,0,0,.22),inset 0 0 160px rgba(255,0,0,.08);border-color:rgba(255,40,40,.35);}
+    50%{box-shadow:inset 0 0 100px rgba(255,0,0,.52),inset 0 0 240px rgba(255,0,0,.24);border-color:rgba(255,40,40,.84);}
+  }
+  #menuTutBtn{
+    cursor:pointer;padding:8px 20px;border-radius:8px;font-size:12.5px;
+    border:1px solid transparent;background:transparent;
+    color:var(--dim);font-family:inherit;transition:.14s;
+  }
+  #menuTutBtn:hover{color:var(--muted);background:rgba(255,255,255,.04);border-color:rgba(60,80,140,.28)}
+  #menuLevels{
+    cursor:pointer;width:100%;padding:14px;border-radius:11px;
+    font-size:15px;font-weight:700;
+    border:1px solid rgba(53,195,240,.44);
+    background:linear-gradient(150deg,rgba(53,195,240,.18),rgba(32,130,200,.22));
+    color:var(--accent);font-family:inherit;letter-spacing:.7px;
+    box-shadow:0 4px 24px rgba(53,195,240,.14);transition:.14s;
+  }
+  #menuLevels:hover{
+    background:linear-gradient(150deg,rgba(53,195,240,.27),rgba(32,130,200,.32));
+    border-color:rgba(53,195,240,.68);
+    box-shadow:0 8px 32px rgba(53,195,240,.26);transform:translateY(-1px);
+  }
+  #menuLevels:active{transform:translateY(0)}
+  #menuPlay{
+    cursor:pointer;width:100%;padding:10px;border-radius:9px;
+    font-size:13px;font-weight:600;
+    border:1px solid rgba(60,80,140,.42);
+    background:rgba(16,23,55,.72);
+    color:var(--muted);font-family:inherit;transition:.12s;
+  }
+  #menuPlay:hover{background:rgba(28,40,88,.78);border-color:rgba(60,180,240,.32);color:var(--ink)}
+  #menuFooter{font-size:10.5px;color:var(--dim);margin-top:2px;letter-spacing:.3px;opacity:.7}
+
+  /* ── Level Select ───────────────────────── */
+  #levelSelect{
+    position:fixed;inset:0;z-index:41;
+    display:flex;align-items:center;justify-content:center;
+    background:
+      radial-gradient(ellipse 150% 110% at 50% 28%,rgba(12,24,70,.82),transparent),
+      rgba(7,9,26,.88);
+    backdrop-filter:blur(4px);transition:opacity .4s;
+  }
+  #levelSelect.out{opacity:0;pointer-events:none}
+  #levelSelectBox{
+    width:540px;max-width:calc(100vw - 32px);
+    max-height:80vh;overflow-y:auto;
+    background:rgba(8,12,30,.94);
+    border:1px solid var(--border);border-top-color:rgba(60,180,240,.22);
+    border-radius:22px;padding:28px;
+    box-shadow:0 48px 120px rgba(0,0,0,.82),inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  #levelSelectHeader{display:flex;align-items:center;gap:12px;margin:0 0 18px}
+  #levelSelectBack{
+    cursor:pointer;
+    border:1px solid rgba(60,80,140,.42);background:rgba(16,23,55,.72);
+    color:var(--muted);border-radius:8px;padding:7px 12px;font-size:12.5px;
+    font-family:inherit;transition:.12s;
+  }
+  #levelSelectBack:hover{background:rgba(28,40,88,.78);border-color:rgba(60,180,240,.32);color:var(--ink)}
+  #levelSelectTitle{
+    font-size:10px;font-weight:700;letter-spacing:2px;
+    text-transform:uppercase;color:var(--accent);opacity:.72;flex:1;text-align:center;
+  }
+  #levelTotalStars{font-size:12px;color:var(--dim);white-space:nowrap}
+  #levelGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .lvl-btn{
+    cursor:pointer;border-radius:12px;padding:12px 6px 10px;text-align:center;
+    border:1px solid rgba(60,80,140,.4);background:rgba(16,23,55,.72);
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    transition:.14s;font-family:inherit;min-height:86px;justify-content:center;
+    position:relative;
+  }
+  .lvl-btn:not(.locked):hover{background:rgba(28,40,88,.85);border-color:rgba(60,180,240,.35);transform:translateY(-1px)}
+  .lvl-btn.locked{cursor:default;opacity:.38;filter:grayscale(.3)}
+  .lvl-btn.done{border-color:rgba(245,166,35,.22)}
+  .lvl-num{font-size:20px;font-weight:800;color:var(--ink);line-height:1}
+  .lvl-name{font-size:8px;font-weight:600;letter-spacing:.5px;color:var(--muted);text-transform:uppercase}
+  .lvl-stars{display:flex;gap:2px}
+  .star-on{color:#f5a623;font-size:11px}
+  .star-off{color:rgba(245,166,35,.18);font-size:11px}
+  .lvl-lock{font-size:15px;margin-bottom:2px}
+  .lvl-size-tag{font-size:8px;color:var(--dim);font-weight:600;position:absolute;top:6px;right:7px}
+  /* World section headers in level select */
+  .world-header{
+    grid-column:1/-1;padding:16px 0 6px;
+    display:flex;align-items:center;gap:8px;
+    font-size:9px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;
+    transition:color .4s;
+  }
+  .world-header:first-child{padding-top:2px}
+  .world-hr{flex:1;height:1px;background:currentColor;opacity:.2}
+
+  /* Toast — level mode */
+  #toastStars{display:none;font-size:22px;letter-spacing:4px;margin:0 0 8px}
+  #toast.levelmode #toastStars{display:block}
+  #toastMap{display:none}
+  #toast.levelmode #toastMap{display:inline-block}
+  #toast.levelmode #toastBtn{display:none}
+  #toast.levelmode #toastNext{display:inline-block}
+
+  /* ── Touch D-pad (movement) ─────────────── */
+  #dpad{
+    position:fixed;z-index:20;display:none;
+    bottom:max(20px,calc(env(safe-area-inset-bottom) + 12px));
+    left:max(20px,calc(env(safe-area-inset-left) + 12px));
+  }
+  .dp-cross,.rp-cross{
+    display:grid;
+    grid-template-columns:44px 44px 44px;
+    grid-template-rows:44px 44px 44px;
+    gap:5px;
+  }
+  .dp-btn,.rp-btn{
+    width:44px;height:44px;
+    background:rgba(16,23,55,.82);
+    border:1px solid rgba(60,80,140,.5);border-radius:11px;
+    color:var(--muted);font-size:17px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;user-select:none;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+    transition:background .08s,color .08s;
+  }
+  .dp-btn:active,.rp-btn:active{
+    background:rgba(53,195,240,.22);
+    border-color:rgba(53,195,240,.45);color:var(--accent);
+  }
+  /* ── Touch rotation pad (pivot actions) ─── */
+  #rotPad{
+    position:fixed;z-index:20;
+    bottom:max(20px,calc(env(safe-area-inset-bottom) + 12px));
+    right:max(20px,calc(env(safe-area-inset-right) + 12px));
+    opacity:0;pointer-events:none;transition:opacity .25s;
+  }
+  #rotPad.show{opacity:1;pointer-events:auto}
+  /* ── Undo button ────────────────────────── */
+  #undoBtn{
+    position:fixed;z-index:20;display:none;
+    bottom:max(20px,calc(env(safe-area-inset-bottom) + 12px));
+    left:50%;transform:translateX(-50%);
+    background:rgba(16,23,55,.88);
+    border:1px solid rgba(60,80,140,.5);border-radius:999px;
+    color:var(--muted);font-size:12.5px;font-weight:600;font-family:inherit;
+    padding:8px 18px;cursor:pointer;white-space:nowrap;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+    transition:background .1s,color .1s,opacity .15s;
+  }
+  #undoBtn:not(:disabled):hover{background:rgba(28,40,88,.9);color:var(--ink);}
+  /* On mouse/trackpad devices, hide touch controls entirely */
+  @media (hover:hover) and (pointer:fine){
+    #dpad,#rotPad{display:none !important;}
+  }
 </style>
 </head>
 <body>
 <div id="scene"></div>
+<div id="bossOverlay"></div>
+
+<div id="mainMenu">
+  <div id="menuBox">
+    <p id="menuEyebrow">3D Navigation Puzzle</p>
+    <h1 id="menuTitle">CUBE MAZE</h1>
+    <p id="menuSub">Each face hides another layer.<br>Rotate the cube to unlock new paths.</p>
+    <div id="menuDivider"></div>
+    <button id="menuLevels">Play Levels</button>
+    <button id="menuPlay">▶&nbsp;&nbsp;Endless Mode<span id="endlessBadge"></span></button>
+    <button id="menuTutBtn">Tutorial</button>
+    <p id="menuFooter">WASD / arrows · Q E R F rotate · drag to orbit</p>
+  </div>
+</div>
+
+<div id="levelSelect" class="out">
+  <div id="levelSelectBox">
+    <div id="levelSelectHeader">
+      <button id="levelSelectBack">← Menu</button>
+      <span id="levelSelectTitle">Levels</span>
+      <span id="levelTotalStars"></span>
+    </div>
+    <div id="levelGrid"></div>
+  </div>
+</div>
 
 <div id="hud" class="panel">
-  <h1>🧊 CUBE MAZE</h1>
-  <div class="row"><span>Layer (depth)</span><b id="hLayer">–</b></div>
-  <div class="row"><span>Up-axis</span><b id="hAxis">–</b></div>
-  <div class="row"><span>Moves</span><b id="hMoves">0</b></div>
-  <div class="row"><span>Rotations</span><b id="hRots">0</b></div>
-  <div class="row"><span>Best solve</span><b id="hPar">–</b></div>
-  <div class="row"><span>Budget left</span><b id="hBudget">–</b></div>
-  <div class="row"><span>Goal</span><b id="hGoal">find it</b></div>
+  <div id="hudTitle">CUBE MAZE</div>
+  <div class="hrow"><span class="hl">Layer</span><b class="hv" id="hLayer">–</b></div>
+  <div class="hrow"><span class="hl" id="hBudgetLabel">Budget left</span><b class="hv" id="hBudget">–</b></div>
 </div>
 
 <div id="ctrls">
-  <button class="btn active" id="view3d">3D view</button>
-  <button class="btn" id="view2d">2D view</button>
-  <div class="seg" style="margin-top:4px">
-    <button class="btn" data-size="3">3³</button>
-    <button class="btn active" data-size="5">5³</button>
-    <button class="btn" data-size="7">7³</button>
+  <div id="ctrlsHeader">
+    <span id="ctrlsHeaderLabel">Controls</span>
+    <span id="ctrlsChevron">▾</span>
   </div>
-  <button class="btn" id="restart">↻ New cube</button>
-  <button class="btn" id="solve" style="margin-top:4px">🧭 Stuck? Auto-solve</button>
+  <div id="ctrlsBody">
+    <span class="ctrl-label">View</span>
+    <div class="seg">
+      <button class="btn active" id="view3d">3D</button>
+      <button class="btn" id="view2d">2D</button>
+    </div>
+    <div class="ctrl-divider"></div>
+    <div id="sizeCtrl">
+      <span class="ctrl-label">Size</span>
+      <div class="seg">
+        <button class="btn" data-size="3">3³</button>
+        <button class="btn active" data-size="5">5³</button>
+        <button class="btn" data-size="7">7³</button>
+      </div>
+      <div class="ctrl-divider"></div>
+    </div>
+    <button class="btn btn-primary" id="restart">↻ New Cube</button>
+    <button class="btn" id="solve">Auto-solve</button>
+    <div class="ctrl-divider"></div>
+    <button class="btn btn-ghost" id="soundBtn">Sound: On</button>
+    <button class="btn btn-ghost" id="tutorialBtn">Tutorial</button>
+    <button class="btn btn-ghost" id="menuBtn">☰ Menu</button>
+  </div>
 </div>
 
-<div id="help" class="panel">
-  <h2>How to play</h2>
-  Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / arrows through the lit maze layer.
-  Reach a <span style="color:var(--pivot)">purple pivot</span> tile, then <span class="pill rot">rotate the cube</span>
-  with <kbd>Q</kbd><kbd>E</kbd> (roll) or <kbd>R</kbd><kbd>F</kbd> (tumble) — this turns a wall you can't pass
-  into a new floor, revealing fresh layers. Get the <span style="color:var(--accent2)">gold marker</span> onto the
-  <span style="color:var(--good)">green goal</span>. Drag to orbit. Toggle <kbd>V</kbd> for flat 2D.
+
+<div id="rotHint">On a pivot — <kbd>Q</kbd><kbd>E</kbd> roll · <kbd>R</kbd><kbd>F</kbd> tumble</div>
+
+<!-- Touch D-pad (movement) -->
+<div id="dpad">
+  <div class="dp-cross">
+    <div></div><button class="dp-btn" id="dpUp">▲</button><div></div>
+    <button class="dp-btn" id="dpLeft">◀</button><div></div><button class="dp-btn" id="dpRight">▶</button>
+    <div></div><button class="dp-btn" id="dpDown">▼</button><div></div>
+  </div>
 </div>
 
-<div id="rotHint">On a pivot — <kbd>Q</kbd><kbd>E</kbd> roll · <kbd>R</kbd><kbd>F</kbd> tumble to rotate the cube</div>
+<!-- Touch rotation pad (shown only on pivot cells) -->
+<div id="rotPad">
+  <div class="rp-cross">
+    <div></div><button class="rp-btn" id="rpFwd">↑</button><div></div>
+    <button class="rp-btn" id="rpRollL">↺</button><div></div><button class="rp-btn" id="rpRollR">↻</button>
+    <div></div><button class="rp-btn" id="rpBack">↓</button><div></div>
+  </div>
+</div>
 
-<div id="toast" class="panel">
-  <h2 id="toastTitle">Solved! 🎉</h2>
+<button id="undoBtn">↶  Undo (3)</button>
+
+<div id="tutOverlay">
+  <div id="tutCard">
+    <div id="tutWelcomeTop">
+      <div id="tutCubeIcon"></div>
+      <div id="tutWelcomeHeading">
+        <p id="tutWelcomeLabel">Cube Maze</p>
+        <h2 id="tutWelcomeTitle">Welcome</h2>
+      </div>
+    </div>
+    <p>Navigate a 3D maze that wraps around all six faces of a cube. The floor you can walk on shifts every time you rotate — walls become floors, new layers open up.</p>
+    <div id="tutMechanics">
+      <div class="tut-mrow">
+        <span class="tut-mkeys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span>
+        <span>Move through the lit floor layer</span>
+      </div>
+      <div class="tut-mrow">
+        <span class="tut-mkeys"><kbd>Q</kbd><kbd>E</kbd><kbd>R</kbd><kbd>F</kbd></span>
+        <span>Rotate the cube at a <span style="color:var(--pivot)">purple pivot</span></span>
+      </div>
+      <div class="tut-mrow">
+        <span class="tut-mkeys" style="color:var(--good);font-size:11px;font-weight:600">Goal</span>
+        <span>Reach the <span style="color:var(--good)">green tile</span> within your move budget</span>
+      </div>
+    </div>
+    <p style="font-size:11.5px;margin-bottom:20px">The 5-level tutorial teaches each mechanic — takes about 2 minutes.</p>
+    <div id="tutFooter">
+      <button class="btn btn-ghost" id="tutSkip">Skip to menu</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-primary" id="tutStart">Start Tutorial ▸</button>
+    </div>
+  </div>
+</div>
+
+<div id="tutBanner">
+  <div id="tutBannerInner">
+    <div id="tutBannerTop">
+      <span id="tutBannerLabel"></span>
+      <span id="tutSkipLink">Skip tutorial ✕</span>
+    </div>
+    <div id="tutBannerBody"></div>
+  </div>
+</div>
+
+<div id="toast">
+  <div id="toastStars"></div>
+  <h2 id="toastTitle">Solved!</h2>
   <p id="toastBody">You navigated the cube.</p>
-  <div style="display:flex;gap:8px;justify-content:center">
-    <button class="btn" id="toastRetry">↻ Retry this cube</button>
-    <button class="btn" id="toastBtn">✦ New cube</button>
+  <div class="toast-btns">
+    <button class="btn" id="toastRetry">↻ Retry</button>
+    <button class="btn" id="toastMap">← Levels</button>
+    <button class="btn btn-primary" id="toastBtn">✦ New Cube</button>
+    <button class="btn btn-primary" id="toastNext">Next ▸</button>
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="three.min.js"></script>
 <script>
 /* =====================================================================
    CUBE MAZE  —  a 3D maze made of stacked maze layers.
@@ -196,12 +684,12 @@ function solveBFS(open,N,pivots,startCell,startOri){
       const nk=key(nc,o);if(dist.has(nk))continue;
       dist.set(nk,d0+1);rotUsed.set(nk,usedRot);q.push({c:nc,o});
     }
-    // rotations on pivot
+    // rotations on pivot — cost 0 (0-1 BFS: insert before current head)
     if(pivots.has(c[0]+','+c[1]+','+c[2])){
       for(const G of ROT_OPS){
         const nR=matMul(G,R);const no=orientIndex(nR);
         const nk=key(c,no);if(dist.has(nk))continue;
-        dist.set(nk,d0+1);rotUsed.set(nk,true);q.push({c,o:no});
+        dist.set(nk,d0);rotUsed.set(nk,true);q.splice(head,0,{c,o:no});
       }
     }
   }
@@ -251,10 +739,15 @@ let R,p; // current orientation matrix, player cell
 let visited=new Set();   // physical cells "x,y,z" the player has occupied
 let trail=[];            // ordered list of cells, for drawing path connectors
 let moves=0,rots=0,won=false,lost=false,is2D=false;
+let menuMode=false,menuSize=5;
+let endlessMode=false,endlessCurrent=0;
+let bossMode=false,bossTimeLeft=0,bossDuration=0;
 let auto=false,autoStates=[],autoIdx=0;   // auto-solve playback state
 let moveLimit=0,currentSeed=0;            // budget = how many actions you may spend
-const LIMIT_FACTOR=2.5;                    // budget ≈ 2.5× the optimal solve
+const LIMIT_FACTOR=1.8;                    // budget ≈ 1.8× the optimal solve
 let curSize=5;
+let history=[],undosLeft=0;               // undo stack (snapshots before each action)
+const MAX_UNDOS=3;
 const host=document.getElementById('scene');
 
 // camera orbit
@@ -275,7 +768,7 @@ function cubeToWorld(R,c){ // map cube cell -> world position (centered), scaled
 
 function initThree(){
   scene=new THREE.Scene();
-  scene.fog=new THREE.FogExp2(0x0c1020,0.045);
+  scene.fog=new THREE.FogExp2(0x07091a,0.042);
   const w=window.innerWidth,h=window.innerHeight;
   camera=new THREE.PerspectiveCamera(48,w/h,0.1,200);
   renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
@@ -291,14 +784,28 @@ function initThree(){
 
   // orbit controls
   const el=renderer.domElement;
-  el.addEventListener('pointerdown',e=>{orbit.drag=true;orbit.px=e.clientX;orbit.py=e.clientY;});
-  window.addEventListener('pointerup',()=>orbit.drag=false);
+  // Mouse (pointer events — skip touch-type so iOS doesn't double-fire)
+  el.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;orbit.drag=true;orbit.px=e.clientX;orbit.py=e.clientY;});
+  window.addEventListener('pointerup',e=>{if(e.pointerType==='touch')return;orbit.drag=false;});
   window.addEventListener('pointermove',e=>{
-    if(!orbit.drag||is2D)return;
-    orbit.az -=(e.clientX-orbit.px)*0.008;
-    orbit.el =Math.max(0.08,Math.min(1.45,orbit.el-(e.clientY-orbit.py)*0.006));
+    if(e.pointerType==='touch'||!orbit.drag||is2D)return;
+    orbit.az-=(e.clientX-orbit.px)*0.008;
+    orbit.el=Math.max(0.08,Math.min(1.45,orbit.el-(e.clientY-orbit.py)*0.006));
     orbit.px=e.clientX;orbit.py=e.clientY;
   });
+  // Touch orbit for iOS Safari (explicit touch events are more reliable than pointer events on iOS)
+  el.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1)return;
+    orbit.drag=true;orbit.px=e.touches[0].clientX;orbit.py=e.touches[0].clientY;
+  },{passive:true});
+  el.addEventListener('touchend',()=>{orbit.drag=false;},{passive:true});
+  el.addEventListener('touchmove',e=>{
+    if(!orbit.drag||is2D||e.touches.length!==1)return;
+    e.preventDefault();
+    orbit.az-=(e.touches[0].clientX-orbit.px)*0.008;
+    orbit.el=Math.max(0.08,Math.min(1.45,orbit.el-(e.touches[0].clientY-orbit.py)*0.006));
+    orbit.px=e.touches[0].clientX;orbit.py=e.touches[0].clientY;
+  },{passive:false});
   el.addEventListener('wheel',e=>{e.preventDefault();orbit.el=Math.max(0.08,Math.min(1.45,orbit.el));},{passive:false});
   window.addEventListener('resize',onResize);
 }
@@ -490,6 +997,23 @@ function animate(){
   const now=performance.now();
   let dt=now-lastT; lastT=now;
   if(dt>60)dt=60; // clamp big gaps (tab was backgrounded) so nothing jumps
+  // boss countdown
+  if(bossMode&&!won&&!lost){
+    bossTimeLeft=Math.max(0,bossTimeLeft-dt/1000);
+    const mins=Math.floor(bossTimeLeft/60);
+    const secs=Math.ceil(bossTimeLeft%60);
+    const tLabel=secs===60?`${mins+1}:00`:`${mins}:${secs<10?'0':''}${secs}`;
+    const hb=document.getElementById('hBudget');
+    if(hb){
+      hb.textContent=tLabel;
+      hb.style.color=bossTimeLeft<20?'#f56262':bossTimeLeft<40?'#f5a623':'#ff8040';
+    }
+    if(bossDuration>0){
+      const frac=Math.max(0.22,bossTimeLeft/bossDuration);
+      document.getElementById('bossOverlay').style.animationDuration=`${0.22+frac*1.1}s`;
+    }
+    if(bossTimeLeft<=0)lose();
+  }
   // rotation animation: slerp cubeGroup quaternion identity->target, time-based
   if(animRot){
     animRot.el+=dt;
@@ -500,7 +1024,8 @@ function animate(){
       cubeGroup.quaternion.identity();
       R=animRot.newR;animRot=null;   // clear BEFORE rebuild so the trail draws
       buildScene();
-      checkRotHint();checkBudget();   // a rotation spends budget too
+      checkRotHint();checkBudget();updateUndoBtn();
+      sfx('rotate');
     }
   }
   // move animation
@@ -513,6 +1038,8 @@ function animate(){
   }
   // drive auto-solve: take the next step whenever nothing is animating
   if(auto&&!animRot&&!animMove&&!won)advanceAuto();
+  // slow auto-orbit on the main menu
+  if(menuMode&&!is2D)orbit.az+=0.003;
   updateCamera();
   renderer.render(scene,camera);
 }
@@ -522,19 +1049,21 @@ function smoother(t){return t*t*t*(t*(t*6-15)+10);}
 /* =====================================================================
    GAME ACTIONS
    ===================================================================== */
-function startLevel(size,seed){
+function startLevel(size,seed,preset){
   curSize=size;N=size;
-  level=buildLevel(N, seed||((Math.random()*1e9)|0));
+  level=preset||buildLevel(N, seed||((Math.random()*1e9)|0));
   R=ORIENTS.list[level.startOri];p=level.startCell.slice();
   currentSeed=level.seed;
-  moveLimit=Math.max(level.par+8, Math.round(level.par*LIMIT_FACTOR));
+  moveLimit=Math.max(level.par+5, Math.round(level.par*LIMIT_FACTOR));
   visited=new Set([p.join(',')]);trail=[p.slice()];
   moves=0;rots=0;won=false;lost=false;animRot=null;animMove=null;
+  history=[];undosLeft=MAX_UNDOS;
   auto=false;autoStates=[];autoIdx=0;setSolveLabel(false);
   cubeGroup.quaternion.identity();
-  document.getElementById('toast').classList.remove('lose');
+  document.getElementById('toast').classList.remove('lose','tutorial');
+  document.querySelectorAll('[data-size]').forEach(b=>b.classList.toggle('active',+b.dataset.size===size));
   buildScene();checkRotHint();hideToast();
-  document.getElementById('hGoal').textContent='find it';
+  if(!menuMode){stopAmbient();if(audioCtx&&!audioMuted)(bossMode?startBossAmbient():startAmbient());}
 }
 
 function tryMove(worldDir){
@@ -545,42 +1074,84 @@ function tryMove(worldDir){
   if(!isOpen(level.open,N,p,hd))return; // wall
   applyMove(nc);
 }
+function snapState(){return{p:p.slice(),R:R.map(r=>r.slice()),moves,rots,trail:trail.map(c=>c.slice()),visited:new Set(visited)};}
 function applyMove(nc){           // commit a (known-valid) step + start its glide
+  history.push(snapState());
   const from=playerObj.position.clone();
   p=nc;moves++;
   animMove={el:0,from,to:cubeToWorld(R,p)};
+  if(navigator.vibrate)navigator.vibrate(8);
 }
 function afterMove(){
   playerObj.position.copy(cubeToWorld(R,p));
   visited.add(p.join(','));   // mark visited only now that the ball has arrived
   trail.push(p.slice());      // ordered route, for drawing the yellow line
   rebuildTrail();
-  updateHUD();checkRotHint();
+  updateHUD();checkRotHint();updateUndoBtn();
+  sfx('move');
   if(p[0]===level.goal[0]&&p[1]===level.goal[1]&&p[2]===level.goal[2]){win();return;}
   checkBudget();
 }
-function actionsUsed(){return moves+rots;}
+function actionsUsed(){return moves;}
 function checkBudget(){
-  if(won||lost||auto)return;          // auto-solve is exempt — it's the bail-out
+  if(won||lost||auto||bossMode)return; // boss uses time limit, not move budget
   if(actionsUsed()>=moveLimit)lose();
 }
 function lose(){
-  lost=true;
+  lost=true;sfx('lose');stopAmbient();
+  document.getElementById('bossOverlay').classList.remove('active');
   document.getElementById('toast').classList.add('lose');
-  document.getElementById('toastTitle').textContent='Out of moves';
-  document.getElementById('toastBody').textContent=
-    `You spent your ${moveLimit}-action budget. The optimal solve is ${level.par}. `+
-    `Retry the same cube, start a new one, or hit Auto-solve to see the route.`;
-  document.getElementById('hGoal').textContent='out of moves';
+  if(endlessMode&&bossMode){
+    document.getElementById('toastTitle').textContent="Time's Up!";
+    document.getElementById('toastBody').textContent=
+      `Boss Level ${endlessCurrent} — you ran out of time. Try again!`;
+    document.getElementById('toastBtn').textContent='← Menu';
+  } else if(endlessMode){
+    document.getElementById('toastTitle').textContent='Out of moves';
+    document.getElementById('toastBody').textContent=
+      `Budget of ${moveLimit} moves exceeded on Endless Level ${endlessCurrent}. Retry to try again.`;
+    document.getElementById('toastBtn').textContent='← Menu';
+  } else if(bossMode){
+    document.getElementById('toastTitle').textContent="Time's Up!";
+    document.getElementById('toastBody').textContent=
+      `Boss Level ${currentLevelId} — you ran out of time. Give it another shot!`;
+  } else {
+    document.getElementById('toastTitle').textContent='Out of moves';
+    document.getElementById('toastBody').textContent=
+      `You used all ${moveLimit} moves. The optimal path is ${level.par} actions. `+
+      `Retry, start a new cube, or hit Auto-solve to see the route.`;
+    document.getElementById('toastBtn').textContent='✦ New Cube';
+  }
   showToast();
 }
 
+function undo(){
+  if(animRot||animMove||!history.length||undosLeft<=0)return;
+  if(won){won=false;hideToast();}
+  if(lost){lost=false;hideToast();}
+  const s=history.pop();
+  p=s.p;R=s.R;moves=s.moves;rots=s.rots;trail=s.trail;visited=s.visited;
+  undosLeft--;
+  playerObj.position.copy(cubeToWorld(R,p));
+  cubeGroup.quaternion.identity();
+  buildScene();rebuildTrail();updateHUD();checkRotHint();
+  updateUndoBtn();
+  sfx('undo');
+}
+function updateUndoBtn(){
+  const btn=document.getElementById('undoBtn');
+  if(!btn)return;
+  btn.textContent=`↶  Undo (${undosLeft})`;
+  btn.disabled=undosLeft<=0||!history.length;
+  btn.style.opacity=btn.disabled?'0.35':'1';
+}
 function tryRotate(G){
   if(won||lost||auto||animRot||animMove)return;
   if(!level.pivots.has(p[0]+','+p[1]+','+p[2]))return; // only on pivots
   applyRotation(G);
 }
 function applyRotation(G){
+  history.push(snapState());
   const newR=matMul(G,R);
   // Swap to the uniform spin-cube (baked at current R) so no single layer is
   // highlighted while turning. Animate group identity -> G; since geometry is
@@ -591,6 +1162,7 @@ function applyRotation(G){
   animRot={el:0,q0:new THREE.Quaternion(0,0,0,1),q1:qG,newR};
   rots++;updateHUD();
   document.getElementById('rotHint').classList.remove('show');
+  document.getElementById('rotPad').classList.remove('show');
 }
 function quatFromMat(M){
   const m=new THREE.Matrix4();
@@ -599,14 +1171,56 @@ function quatFromMat(M){
 }
 
 function win(){
-  won=true;auto=false;setSolveLabel(false);
-  document.getElementById('toast').classList.remove('lose');
-  document.getElementById('toastTitle').textContent='Solved! 🎉';
+  won=true;auto=false;setSolveLabel(false);sfx('win');stopAmbient();
+  const wasBoss=bossMode;
+  const timeSpared=Math.ceil(bossTimeLeft);
+  document.getElementById('bossOverlay').classList.remove('active');
+  document.getElementById('toast').classList.remove('lose','tutorial','levelmode','endlessmode');
   const used=actionsUsed();
-  const tag = used<=level.par ? ' — optimal! 🏆' : ` (best possible: ${level.par})`;
-  document.getElementById('toastBody').textContent=
-    `${moves} moves · ${rots} rotations = ${used} actions${tag}`;
-  document.getElementById('hGoal').textContent='reached ✓';
+  if(tutorialMode){
+    const isLast=tutLevelIdx>=TUT_LEVELS.length-1;
+    document.getElementById('toast').classList.add('tutorial');
+    document.getElementById('toastTitle').textContent=isLast?'Tutorial complete!':'Nice!';
+    document.getElementById('toastBody').textContent=isLast
+      ? `You solved every lesson in ${used} action${used===1?'':'s'}. Time for a real cube.`
+      : `Solved in ${used} action${used===1?'':'s'} (best possible: ${level.par}). Next up: ${TUT_LEVELS[tutLevelIdx+1].label}.`;
+    document.getElementById('toastNext').textContent=isLast?'Start playing ▸':'Next lesson ▸';
+  } else if(endlessMode){
+    saveEndlessBest(endlessCurrent);
+    refreshEndlessBtn();
+    document.getElementById('toast').classList.add('endlessmode');
+    if(wasBoss){
+      document.getElementById('toastTitle').textContent='BOSS Cleared!';
+      document.getElementById('toastBody').textContent=
+        `Level ${endlessCurrent} · ${used} action${used===1?'':'s'} · ${timeSpared}s to spare!`;
+    } else {
+      document.getElementById('toastTitle').textContent=`Level ${endlessCurrent} cleared!`;
+      const tag=used<=level.par?' — optimal!':`  (par: ${level.par})`;
+      document.getElementById('toastBody').textContent=`${used} action${used===1?'':'s'}${tag}`;
+    }
+    document.getElementById('toastNext').textContent=`Level ${endlessCurrent+1} →`;
+  } else if(levelMode){
+    const stars=calcStars(used,level.par);
+    saveLevelProgress(currentLevelId,stars);
+    document.getElementById('toast').classList.add('levelmode');
+    const starStr='<span class="star-on">★</span>'.repeat(stars)+'<span class="star-off">★</span>'.repeat(3-stars);
+    document.getElementById('toastStars').innerHTML=starStr;
+    if(wasBoss){
+      document.getElementById('toastTitle').textContent='BOSS Cleared!';
+      document.getElementById('toastBody').textContent=
+        `Level ${currentLevelId} · ${timeSpared}s to spare!`;
+    } else {
+      document.getElementById('toastTitle').textContent=stars===3?'Perfect!':stars===2?'Well done!':'Level cleared!';
+      const tag=used<=level.par?' — optimal!':` (par: ${level.par} moves)`;
+      document.getElementById('toastBody').textContent=`${used} move${used===1?'':'s'} · ${rots} rotation${rots===1?'':'s'}${tag}`;
+    }
+    document.getElementById('toastNext').textContent=currentLevelId<LEVELS.length?'Next Level ▸':'All done! ▸';
+  } else {
+    document.getElementById('toastTitle').textContent='Solved!';
+    const tag=used<=level.par?' — optimal!':` (best possible: ${level.par})`;
+    document.getElementById('toastBody').textContent=
+      `${moves} move${moves===1?'':'s'} · ${rots} rotation${rots===1?'':'s'}${tag}`;
+  }
   showToast();
 }
 
@@ -632,7 +1246,7 @@ function solvePath(startCell,startOri){
     if(level.pivots.has(c.join(','))){
       for(const G of ROT_OPS){
         const no=orientIndex(matMul(G,Rm));const nk=key(c,no);
-        if(prev.has(nk))continue;prev.set(nk,{c,o});q.push({c,o:no});
+        if(prev.has(nk))continue;prev.set(nk,{c,o});q.splice(head,0,{c,o:no});
       }
     }
   }
@@ -642,7 +1256,7 @@ function solvePath(startCell,startOri){
   return path.reverse();   // [start ... goal]
 }
 function setSolveLabel(active){
-  document.getElementById('solve').textContent=active?'⏹ Stop solving':'🧭 Stuck? Auto-solve';
+  document.getElementById('solve').textContent=active?'Stop solving':'Auto-solve';
   document.getElementById('solve').classList.toggle('active',active);
 }
 function toggleAutoSolve(){
@@ -663,20 +1277,19 @@ function advanceAuto(){               // called from the loop when idle
 
 // ---------- HUD ----------
 function updateHUD(){
-  const up=upAxisOf(R);const axisName=['X','Y','Z'][up.axis];
+  const up=upAxisOf(R);
   document.getElementById('hLayer').textContent=`${p[up.axis]+1} / ${N}`;
-  document.getElementById('hAxis').textContent=`${axisName}${up.sign>0?'+':'−'}`;
-  document.getElementById('hMoves').textContent=moves;
-  document.getElementById('hRots').textContent=rots;
-  document.getElementById('hPar').textContent=level?level.par:'–';
+  if(bossMode)return; // animate loop drives the countdown display
   const left=moveLimit-actionsUsed();
   const hb=document.getElementById('hBudget');
   hb.textContent=Math.max(0,left)+' / '+moveLimit;
-  hb.style.color = left<=3 ? '#ff6b6b' : (left<=Math.ceil(moveLimit*0.25) ? '#ffd45a' : '');
+  hb.style.color = left<=3 ? '#f56262' : (left<=Math.ceil(moveLimit*0.25) ? '#f5a623' : '');
 }
 function checkRotHint(){
   const onPivot=level.pivots.has(p[0]+','+p[1]+','+p[2]);
-  document.getElementById('rotHint').classList.toggle('show',onPivot&&!won);
+  const show=onPivot&&!won;
+  document.getElementById('rotHint').classList.toggle('show',show);
+  document.getElementById('rotPad').classList.toggle('show',show);
 }
 function showToast(){document.getElementById('toast').classList.add('show');}
 function hideToast(){document.getElementById('toast').classList.remove('show');}
@@ -690,39 +1303,716 @@ function setView(v){
   buildScene();
 }
 
+// ---------- main menu ----------
+const GAME_UI=['hud','ctrls'];
+function showGameUI(){
+  GAME_UI.forEach(id=>document.getElementById(id).style.display='');
+  document.getElementById('dpad').style.display='block';
+  document.getElementById('undoBtn').style.display='block';
+  updateUndoBtn();
+}
+function hideGameUI(){
+  GAME_UI.forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('dpad').style.display='none';
+  document.getElementById('undoBtn').style.display='none';
+  document.getElementById('rotPad').classList.remove('show');
+}
+
+function endlessLevelConfig(n){
+  const size=n<=8?3:n<=20?5:7;
+  const seed=(n*48271+12345)%999983;
+  return{size,seed};
+}
+function getEndlessBest(){return parseInt(storageGet('cubeMazeEndless')||'0',10);}
+function saveEndlessBest(n){const b=getEndlessBest();if(n>b)storageSet('cubeMazeEndless',String(n));}
+function refreshEndlessBtn(){
+  const best=getEndlessBest();
+  const badge=document.getElementById('endlessBadge');
+  if(badge)badge.textContent=best>0?`Continue · Level ${best+1}`:'';
+}
+function startEndlessLevel(n){
+  const isBoss=n%5===0;
+  bossMode=isBoss;
+  endlessMode=true;endlessCurrent=n;
+  levelMode=false;menuMode=false;
+  hideLevelSelect();
+  document.getElementById('mainMenu').classList.add('out');
+  showGameUI();
+  if(isBoss){
+    applyBossTheme();
+    bossDuration=Math.max(35,70-(Math.floor(n/5)-1)*4);
+    bossTimeLeft=bossDuration;
+    document.getElementById('bossOverlay').classList.add('active');
+    document.getElementById('bossOverlay').style.animationDuration='1.2s';
+    document.getElementById('hudTitle').textContent=`BOSS · Lv ${n}`;
+    const lbl=document.getElementById('hBudgetLabel');
+    if(lbl)lbl.textContent='Time';
+  } else {
+    applyTheme(1);
+    document.getElementById('bossOverlay').classList.remove('active');
+    document.getElementById('hudTitle').textContent=`Endless · Lv ${n}`;
+    const lbl=document.getElementById('hBudgetLabel');
+    if(lbl)lbl.textContent='Budget left';
+    const hb=document.getElementById('hBudget');
+    if(hb)hb.style.color='';
+  }
+  const{size,seed}=endlessLevelConfig(n);
+  startLevel(size,seed);
+}
+function enterEndless(){
+  const best=getEndlessBest();
+  startEndlessLevel(best+1);
+}
+function goToMenu(){
+  menuMode=false;
+  levelMode=false;currentLevelId=null;
+  endlessMode=false;endlessCurrent=0;
+  bossMode=false;bossTimeLeft=0;bossDuration=0;
+  document.getElementById('bossOverlay').classList.remove('active');
+  const _lbl=document.getElementById('hBudgetLabel');if(_lbl)_lbl.textContent='Budget left';
+  const _hb=document.getElementById('hBudget');if(_hb)_hb.style.color='';
+  applyTheme(1);
+  stopAmbient();
+  refreshEndlessBtn();
+  hideGameUI();
+  hideToast();
+  hideLevelSelect();
+  if(tutorialMode){tutorialMode=false;hideTutBanner();}
+  if(auto){auto=false;setSolveLabel(false);}
+  document.getElementById('mainMenu').classList.remove('out');
+  document.getElementById('hudTitle').textContent='CUBE MAZE';
+  menuMode=true;
+}
+
+/* =====================================================================
+   TUTORIAL  —  five hand-crafted levels that each isolate one mechanic,
+   from a trivial 2×2×2 walk up to a full generated maze. Levels reuse
+   the same play-state graph (solveBFS) as normal play, so HUD, budget,
+   auto-solve, and win/lose all work unchanged.
+   ===================================================================== */
+function emptyOpen(N){
+  const open={};
+  for(let x=0;x<N;x++)for(let y=0;y<N;y++)for(let z=0;z<N;z++)open[x+','+y+','+z]=new Set();
+  return open;
+}
+function link(open,a,b){
+  const d=[b[0]-a[0],b[1]-a[1],b[2]-a[2]];
+  open[a.join(',')].add(dirKey(d));
+  open[b.join(',')].add(dirKey(negDir(d)));
+}
+function customLevel(N,links,pivotCells,startCell,startOri,goal){
+  const open=emptyOpen(N);
+  links.forEach(([a,b])=>link(open,a,b));
+  const pivots=new Set(pivotCells.map(c=>c.join(',')));
+  const {cellBest}=solveBFS(open,N,pivots,startCell,startOri);
+  const par=cellBest.get(goal.join(','));
+  return {N,open,pivots,startCell,startOri,goal,seed:0,par};
+}
+const TUT_LEVELS=[
+  { label:'Move around',
+    lesson:'Use <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or the arrow keys to reach the goal.',
+    build:()=>customLevel(2,[[[0,0,0],[1,0,0]]],[],[0,0,0],0,[1,0,0]) },
+  { label:'Find the path',
+    lesson:'Tiles don\'t all connect directly — find the two-step route to the goal.',
+    build:()=>customLevel(2,[[[0,0,0],[0,0,1]],[[0,0,1],[1,0,1]]],[],[0,0,0],0,[1,0,1]) },
+  { label:'Rotate the cube',
+    lesson:'Reach the <span style="color:var(--pivot)">purple pivot</span>, then press <kbd>Q</kbd> <kbd>E</kbd> <kbd>R</kbd> or <kbd>F</kbd> to rotate the cube and reveal a new floor.',
+    build:()=>customLevel(2,[[[0,0,0],[1,0,0]],[[1,0,0],[1,1,0]]],[[1,0,0]],[0,0,0],0,[1,1,0]) },
+  { label:'Chain it together',
+    lesson:'Walk to the pivot, rotate, then keep walking — plan the whole route before you move.',
+    build:()=>customLevel(3,[[[0,1,1],[1,1,1]],[[1,1,1],[2,1,1]],[[2,1,1],[2,2,1]]],[[2,1,1]],[0,1,1],0,[2,2,1]) },
+  { label:'A real maze',
+    lesson:'This is a full generated maze, just like normal play. Stuck? Try <b>Auto-solve</b>.',
+    highlight:'#solve',
+    build:()=>buildLevel(3,(Math.random()*1e9)|0) },
+];
+
+// ── Campaign levels ───────────────────────────────────────────────────────────
+/* ── Worlds & Theming ──────────────────────────────────────────── */
+const WORLDS=[
+  {id:1,name:'ORIGIN',accent:'#35c3f0',pivotCol:'#b866f5',col:{
+    floor:0x223066,floorEdge:0x4a5db5,wall:0x6f7fd6,wallTop:0x9fb0ff,
+    ghost:0x1b2447,ghostEdge:0x2c3a72,player:0xffd45a,goal:0x5affa1,pivot:0xc77dff,
+  }},
+  {id:2,name:'EMBER',accent:'#ff8a3d',pivotCol:'#ff6655',col:{
+    floor:0x221008,floorEdge:0x7a3a14,wall:0xa04825,wallTop:0xff9060,
+    ghost:0x180b05,ghostEdge:0x5a2510,player:0xffd45a,goal:0x5affa1,pivot:0xff6655,
+  }},
+];
+function applyTheme(worldId){
+  const w=WORLDS.find(x=>x.id===worldId)||WORLDS[0];
+  Object.assign(COL,w.col);
+  document.documentElement.style.setProperty('--accent',w.accent);
+  document.documentElement.style.setProperty('--pivot',w.pivotCol);
+}
+function applyBossTheme(){
+  Object.assign(COL,{
+    floor:0x1a0404,floorEdge:0x6b0f0f,wall:0x8c1f1f,wallTop:0xff3838,
+    ghost:0x110202,ghostEdge:0x380808,player:0xffd45a,goal:0x5affa1,pivot:0xff4444,
+  });
+  document.documentElement.style.setProperty('--accent','#ff2c2c');
+  document.documentElement.style.setProperty('--pivot','#ff4444');
+}
+
+const LEVELS=[
+  {id:1, world:1, name:'First Step',    size:2, build:()=>customLevel(2,[[[0,0,0],[1,0,0]]],[],[0,0,0],0,[1,0,0])},
+  {id:2, world:1, name:'The Bend',      size:2, build:()=>customLevel(2,[[[0,0,0],[0,0,1]],[[0,0,1],[1,0,1]]],[],[0,0,0],0,[1,0,1])},
+  {id:3, world:1, name:'Flip It',       size:2, build:()=>customLevel(2,[[[0,0,0],[1,0,0]],[[1,0,0],[1,1,0]]],[[1,0,0]],[0,0,0],0,[1,1,0])},
+  {id:4, world:1, name:'Small Maze',    size:3, build:()=>buildLevel(3,42)},
+  {id:5, world:1, name:'Crossroads',    size:3, build:()=>buildLevel(3,137)},
+  {id:6, world:1, name:'Double Pivot',  size:3, build:()=>buildLevel(3,271)},
+  {id:7, world:1, name:'The Grid',      size:3, build:()=>buildLevel(3,999)},
+  {id:8, world:1, name:'Big Box',       size:5, build:()=>buildLevel(5,31337)},
+  {id:9, world:1, name:'Layer Cake',    size:5, build:()=>buildLevel(5,54321)},
+  {id:10,world:1, name:'Master Cube',   size:5, build:()=>buildLevel(5,99999)},
+  // World 2 — Ember
+  {id:11,world:2, name:'Ember Wake',    size:3, build:()=>buildLevel(3,11011)},
+  {id:12,world:2, name:'Hot Streak',    size:3, build:()=>buildLevel(3,23451)},
+  {id:13,world:2, name:'Twisted Path',  size:3, build:()=>buildLevel(3,34129)},
+  {id:14,world:2, name:'Cinder Run',    size:5, build:()=>buildLevel(5,45678)},
+  {id:15,world:2, name:'Heat Sink',     size:5, build:()=>buildLevel(5,56789)},
+  {id:16,world:2, name:'Magma Core',    size:5, build:()=>buildLevel(5,67890)},
+  {id:17,world:2, name:'Inferno',       size:5, build:()=>buildLevel(5,78901)},
+  {id:18,world:2, name:'Volcanic',      size:7, build:()=>buildLevel(7,89012)},
+  {id:19,world:2, name:'Brimstone',     size:7, build:()=>buildLevel(7,90123)},
+  {id:20,world:2, name:'Eternal Flame', size:7, build:()=>buildLevel(7,10203)},
+];
+let levelMode=false, currentLevelId=null;
+
+let _progressMem={};  // in-memory fallback when localStorage is unavailable
+function getLevelProgress(){
+  try{
+    const s=localStorage.getItem('cubeMazeLevelProgress');
+    if(s){const p=JSON.parse(s);Object.assign(_progressMem,p);return p;}
+  }catch(e){}
+  return _progressMem;
+}
+function saveLevelProgress(id,stars){
+  if(!_progressMem[id]||_progressMem[id].stars<stars)
+    _progressMem[id]={completed:true,stars};
+  try{
+    const p=JSON.parse(localStorage.getItem('cubeMazeLevelProgress')||'{}');
+    if(!p[id]||p[id].stars<stars)p[id]={completed:true,stars};
+    localStorage.setItem('cubeMazeLevelProgress',JSON.stringify(p));
+  }catch(e){}
+}
+function isLevelUnlocked(id){
+  if(id===1)return true;
+  return !!getLevelProgress()[id-1]?.completed;
+}
+function calcStars(used,par){
+  if(used<=par)return 3;
+  if(used<=Math.ceil(par*1.5))return 2;
+  return 1;
+}
+function renderLevelSelect(){
+  const grid=document.getElementById('levelGrid');
+  grid.innerHTML='';
+  const progress=getLevelProgress();
+  let totalStars=0;
+  WORLDS.forEach(w=>{
+    // World header row
+    const hdr=document.createElement('div');
+    hdr.className='world-header';
+    hdr.style.color=w.accent;
+    hdr.innerHTML=`<span class="world-hr"></span>${w.name}<span class="world-hr"></span>`;
+    grid.appendChild(hdr);
+    // Level buttons for this world
+    LEVELS.filter(l=>l.world===w.id).forEach(lvl=>{
+      const unlocked=isLevelUnlocked(lvl.id);
+      const done=progress[lvl.id];
+      if(done)totalStars+=done.stars||0;
+      const btn=document.createElement('button');
+      btn.className='lvl-btn'+(unlocked?'':' locked')+(done?' done':'');
+      if(done)btn.style.borderColor=w.accent+'44'; // 0x44 ≈ 27% alpha
+      const sizeTag=`<span class="lvl-size-tag">${lvl.size}³</span>`;
+      if(unlocked){
+        const s=done?done.stars:0;
+        const stars='<div class="lvl-stars">'
+          +`<span class="${s>=1?'star-on':'star-off'}">★</span>`
+          +`<span class="${s>=2?'star-on':'star-off'}">★</span>`
+          +`<span class="${s>=3?'star-on':'star-off'}">★</span>`
+          +'</div>';
+        btn.innerHTML=sizeTag+`<span class="lvl-num">${lvl.id}</span><span class="lvl-name">${lvl.name}</span>${stars}`;
+        btn.onclick=()=>startLevelById(lvl.id);
+      }else{
+        btn.innerHTML=`<span class="lvl-name">Level ${lvl.id}</span>`;
+      }
+      grid.appendChild(btn);
+    });
+  });
+  document.getElementById('levelTotalStars').textContent=`★ ${totalStars}/${LEVELS.length*3}`;
+}
+function showLevelSelect(){
+  renderLevelSelect();
+  document.getElementById('levelSelect').classList.remove('out');
+  document.getElementById('mainMenu').classList.add('out');
+  hideGameUI();
+  hideToast();
+}
+function hideLevelSelect(){
+  document.getElementById('levelSelect').classList.add('out');
+}
+function startLevelById(id){
+  const def=LEVELS.find(l=>l.id===id);
+  if(!def)return;
+  const isBoss=id%10===0;
+  bossMode=isBoss;
+  if(isBoss){
+    applyBossTheme();
+    bossDuration=def.size<=3?60:def.size<=5?110:160;
+    bossTimeLeft=bossDuration;
+    document.getElementById('bossOverlay').classList.add('active');
+    document.getElementById('bossOverlay').style.animationDuration='1.2s';
+    const lbl=document.getElementById('hBudgetLabel');if(lbl)lbl.textContent='Time';
+  } else {
+    applyTheme(def.world||1);
+    document.getElementById('bossOverlay').classList.remove('active');
+    const lbl=document.getElementById('hBudgetLabel');if(lbl)lbl.textContent='Budget left';
+    const hb=document.getElementById('hBudget');if(hb)hb.style.color='';
+  }
+  currentLevelId=id; levelMode=true; menuMode=false;
+  hideLevelSelect();
+  document.getElementById('mainMenu').classList.add('out');
+  showGameUI();
+  document.getElementById('sizeCtrl').style.display='none';
+  document.getElementById('hudTitle').textContent=isBoss?`BOSS · Level ${id}`:`Level ${id}`;
+  startLevel(def.size,0,def.build());
+}
+
+let tutorialMode=false,tutLevelIdx=0;
+function startTutorial(){
+  tutorialMode=true;tutLevelIdx=0;
+  menuMode=false;
+  showGameUI();
+  document.getElementById('mainMenu').classList.add('out');
+  loadTutorialLevel();
+}
+function loadTutorialLevel(){
+  const cfg=TUT_LEVELS[tutLevelIdx];
+  const lvl=cfg.build();
+  startLevel(lvl.N,lvl.seed,lvl);
+  document.getElementById('tutBannerLabel').textContent=`Tutorial ${tutLevelIdx+1}/${TUT_LEVELS.length} — ${cfg.label}`;
+  document.getElementById('tutBannerBody').innerHTML=cfg.lesson;
+  document.getElementById('tutBanner').classList.add('show');
+  document.querySelectorAll('.tut-glow').forEach(el=>el.classList.remove('tut-glow'));
+  if(cfg.highlight){const el=document.querySelector(cfg.highlight);if(el)el.classList.add('tut-glow');}
+}
+function hideTutBanner(){
+  document.getElementById('tutBanner').classList.remove('show');
+  document.querySelectorAll('.tut-glow').forEach(el=>el.classList.remove('tut-glow'));
+}
+function storageSet(k,v){try{localStorage.setItem(k,v);}catch(_){}}
+function storageGet(k){try{return localStorage.getItem(k);}catch(_){return null;}}
+function exitTutorial(){
+  tutorialMode=false;hideTutBanner();
+  storageSet('cubeMazeTutorialSeen','1');
+}
+function dismissIntro(){
+  document.getElementById('tutOverlay').classList.remove('show');
+  storageSet('cubeMazeTutorialSeen','1');
+}
+document.getElementById('tutStart').onclick=()=>{dismissIntro();startTutorial();};
+document.getElementById('tutSkip').onclick=dismissIntro;
+document.getElementById('tutorialBtn').onclick=()=>document.getElementById('tutOverlay').classList.add('show');
+document.getElementById('tutSkipLink').onclick=()=>{exitTutorial();goToMenu();};
+document.getElementById('toastNext').onclick=()=>{
+  hideToast();
+  if(tutorialMode){
+    if(tutLevelIdx>=TUT_LEVELS.length-1){exitTutorial();goToMenu();}
+    else{tutLevelIdx++;loadTutorialLevel();}
+  } else if(endlessMode){
+    startEndlessLevel(endlessCurrent+1);
+  } else if(levelMode){
+    const nextId=currentLevelId+1;
+    if(nextId<=LEVELS.length){startLevelById(nextId);}
+    else{levelMode=false;currentLevelId=null;showLevelSelect();}
+  }
+};
+
 /* =====================================================================
    INPUT
    ===================================================================== */
+// Camera-relative world direction shared by keyboard and touch controls.
+// fwd=1 → into the scene (W / up), right=1 → camera-right (D / right).
+function viewDir(fwd,right){
+  if(is2D)return[right,0,-fwd];
+  const az=orbit.az;
+  return[-Math.sin(az)*fwd+Math.cos(az)*right,0,-Math.cos(az)*fwd-Math.sin(az)*right];
+}
 window.addEventListener('keydown',e=>{
+  if(menuMode)return;
+  if(document.getElementById('tutOverlay').classList.contains('show')){
+    if(e.key==='Escape')dismissIntro();
+    return;
+  }
   const k=e.key.toLowerCase();
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();
   switch(k){
-    case 'w': case 'arrowup':    tryMove([0,0,-1]);break;
-    case 's': case 'arrowdown':  tryMove([0,0,1]); break;
-    case 'a': case 'arrowleft':  tryMove([-1,0,0]);break;
-    case 'd': case 'arrowright':  tryMove([1,0,0]); break;
+    case 'w': case 'arrowup':    tryMove(viewDir(1,0));  break;
+    case 's': case 'arrowdown':  tryMove(viewDir(-1,0)); break;
+    case 'a': case 'arrowleft':  tryMove(viewDir(0,-1)); break;
+    case 'd': case 'arrowright': tryMove(viewDir(0,1));  break;
     case 'q': tryRotate(RZ); break;   // roll left
     case 'e': tryRotate(RZn);break;   // roll right
     case 'r': tryRotate(RX); break;   // tumble forward
     case 'f': tryRotate(RXn);break;   // tumble back
     case 'v': setView(is2D?'3d':'2d');break;
+    case 'u': undo();break;
+    case 'z': if(e.ctrlKey||e.metaKey){e.preventDefault();undo();}break;
   }
 });
 document.getElementById('view3d').onclick=()=>setView('3d');
 document.getElementById('view2d').onclick=()=>setView('2d');
-document.getElementById('restart').onclick=()=>startLevel(curSize);
+document.getElementById('restart').onclick=()=>{
+  tutorialMode=false;hideTutBanner();
+  if(endlessMode){hideToast();startEndlessLevel(endlessCurrent);return;}
+  if(levelMode&&currentLevelId){startLevelById(currentLevelId);return;}
+  startLevel(curSize);
+};
 document.getElementById('solve').onclick=toggleAutoSolve;
-document.getElementById('toastBtn').onclick=()=>startLevel(curSize);
-document.getElementById('toastRetry').onclick=()=>startLevel(curSize,currentSeed);
-document.querySelectorAll('[data-size]').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('[data-size]').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active');startLevel(+b.dataset.size);
-});
+document.getElementById('toastBtn').onclick=()=>{
+  if(endlessMode){goToMenu();return;}
+  tutorialMode=false;hideTutBanner();levelMode=false;currentLevelId=null;startLevel(curSize);
+};
+document.getElementById('toastRetry').onclick=()=>{
+  if(endlessMode){hideToast();startEndlessLevel(endlessCurrent);return;}
+  if(levelMode&&currentLevelId){hideToast();startLevelById(currentLevelId);return;}
+  tutorialMode=false;hideTutBanner();startLevel(curSize,currentSeed);
+};
+document.getElementById('toastMap').onclick=()=>{hideToast();levelMode=false;currentLevelId=null;showLevelSelect();};
+document.getElementById('menuBtn').onclick=goToMenu;
+document.getElementById('undoBtn').onclick=undo;
+document.getElementById('soundBtn').onclick=toggleMute;
+// audioMuted declared here so it's defined before the textContent line below
+let audioCtx=null,masterGain=null,ambientNodes=[];
+let audioMuted=storageGet('cubeMazeMuted')==='1';
+document.getElementById('soundBtn').textContent=audioMuted?'Sound: Off':'Sound: On';
+document.getElementById('menuPlay').onclick=()=>enterEndless();
+document.getElementById('menuLevels').onclick=()=>showLevelSelect();
+document.getElementById('levelSelectBack').onclick=()=>{hideLevelSelect();goToMenu();};
+document.getElementById('menuTutBtn').onclick=()=>document.getElementById('tutOverlay').classList.add('show');
+
+// ---------- audio ----------
+function initAudio(){
+  if(audioCtx)return;
+  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  masterGain=audioCtx.createGain();
+  masterGain.gain.value=audioMuted?0:0.4;
+  masterGain.connect(audioCtx.destination);
+}
+function sfx(type){
+  if(!audioCtx||audioMuted)return;
+  const ac=audioCtx,g=ac.createGain(),now=ac.currentTime;
+  g.connect(masterGain);
+  const osc=ac.createOscillator();
+  osc.connect(g);
+  if(type==='move'){
+    osc.type='sine';osc.frequency.setValueAtTime(520,now);
+    g.gain.setValueAtTime(0.18,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.09);
+    osc.start(now);osc.stop(now+0.09);
+  }else if(type==='rotate'){
+    osc.type='triangle';osc.frequency.setValueAtTime(380,now);
+    osc.frequency.linearRampToValueAtTime(220,now+0.18);
+    g.gain.setValueAtTime(0.14,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.2);
+    osc.start(now);osc.stop(now+0.2);
+  }else if(type==='win'){
+    [0,0.12,0.24].forEach((t,i)=>{
+      const o2=ac.createOscillator(),g2=ac.createGain();
+      o2.connect(g2);g2.connect(masterGain);
+      o2.type='sine';o2.frequency.value=[440,554,660][i];
+      g2.gain.setValueAtTime(0.22,now+t);
+      g2.gain.exponentialRampToValueAtTime(0.001,now+t+0.35);
+      o2.start(now+t);o2.stop(now+t+0.36);
+    });
+    osc.disconnect();return;
+  }else if(type==='lose'){
+    osc.type='sawtooth';osc.frequency.setValueAtTime(180,now);
+    osc.frequency.linearRampToValueAtTime(80,now+0.4);
+    g.gain.setValueAtTime(0.2,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.42);
+    osc.start(now);osc.stop(now+0.42);
+  }else if(type==='undo'){
+    osc.type='sine';osc.frequency.setValueAtTime(320,now);
+    osc.frequency.linearRampToValueAtTime(260,now+0.07);
+    g.gain.setValueAtTime(0.12,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.08);
+    osc.start(now);osc.stop(now+0.09);
+  }
+}
+function startAmbient(){
+  if(!audioCtx||ambientNodes.length)return;
+  const ac=audioCtx;
+  // Signal chain: notes → dry gain → lo-pass → masterGain
+  //                                 lo-pass → delay → feedback → wet → masterGain
+  const dry=ac.createGain(); dry.gain.value=0.78;
+  const lpf=ac.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=3800;
+  dry.connect(lpf); lpf.connect(masterGain);
+  const dly=ac.createDelay(0.6); dly.delayTime.value=0.28;
+  const fb=ac.createGain(); fb.gain.value=0.22;
+  const wet=ac.createGain(); wet.gain.value=0.18;
+  dly.connect(fb); fb.connect(dly); dly.connect(wet); wet.connect(masterGain);
+  lpf.connect(dly);
+
+  const m2f=m=>440*Math.pow(2,(m-69)/12);
+  const BPM=110, B=60/BPM;
+  const now=ac.currentTime+0.05;
+  const rnd=()=>(Math.random()-0.5)*0.016; // ±16 ms humanisation
+
+  // ii–V–I–VI in C  (Dm7 | G7 | Cmaj7 | Am7), one chord per bar
+  const bassLines=[
+    [38,41,45,47],  // Dm7  D2 F2 A2 B2
+    [43,47,50,52],  // G7   G2 B2 D3 E3
+    [36,40,43,45],  // Cmaj7 C2 E2 G2 A2
+    [33,36,40,43],  // Am7  A1 C2 E2 G2
+  ];
+  const chordVoicings=[
+    [50,53,57,60],  // Dm7  D3 F3 A3 C4
+    [55,59,62,65],  // G7   G3 B3 D4 F4
+    [48,52,55,59],  // Cmaj7 C3 E3 G3 B3
+    [45,48,52,55],  // Am7  A2 C3 E3 G3
+  ];
+  // Melody chord-tones over the 4 bars (null = rest)
+  const melody=[
+    [null,65,null,67], // Dm7:  – F4 – G4
+    [67,null,65,null], // G7:   G4 – F4 –
+    [64,null,67,null], // Cmaj7: E4 – G4 –
+    [69,null,67,null], // Am7:  A4 – G4 –
+  ];
+
+  function note(midi,t,dur,type,vol){
+    const o=ac.createOscillator(), g=ac.createGain();
+    o.type=type; o.frequency.value=m2f(midi);
+    const at=Math.max(now,t+rnd());
+    g.gain.setValueAtTime(0,at);
+    g.gain.linearRampToValueAtTime(vol,at+0.013);
+    g.gain.exponentialRampToValueAtTime(vol*0.35,at+dur*0.32);
+    g.gain.exponentialRampToValueAtTime(0.0001,at+dur);
+    o.connect(g); g.connect(dry);
+    o.start(at); o.stop(at+dur+0.08);
+    ambientNodes.push(o);
+  }
+
+  const BARS=8; // pre-schedule 8 bars then loop
+  for(let bar=0;bar<BARS;bar++){
+    const ch=bar%4;
+    for(let beat=0;beat<4;beat++){
+      const swg=beat%2===1?B*0.11:0; // swing odd beats
+      const t=now+(bar*4+beat)*B+swg;
+      // Walking bass every beat (triangle — warm low end)
+      note(bassLines[ch][beat], t, B*0.78, 'triangle', 0.3);
+      // Piano comp on beats 2 & 4
+      if(beat===1||beat===3){
+        chordVoicings[ch].forEach(m=>note(m, t+0.018, B*0.38, 'sine', 0.065));
+      }
+      // Sparse melody lead
+      const mel=melody[ch][beat];
+      if(mel) note(mel, t, B*0.82, 'sine', 0.09);
+    }
+  }
+
+  // Loop: restart when this batch finishes
+  const loopMs=(BARS*4*B-0.15)*1000;
+  const tid=setTimeout(()=>{
+    ambientNodes.forEach(n=>{try{n.stop();}catch(_){}});
+    ambientNodes=[];
+    if(audioCtx&&!audioMuted)startAmbient();
+  }, loopMs);
+  ambientNodes.push({stop:()=>clearTimeout(tid)});
+}
+function stopAmbient(){
+  ambientNodes.forEach(n=>{try{n.stop();}catch(_){}});
+  ambientNodes=[];
+}
+function getBossBPM(){
+  if(!bossMode||bossDuration<=0)return 148;
+  const frac=Math.max(0,bossTimeLeft/bossDuration);
+  return Math.round(148+(1-frac)*62); // 148 at full time → 210 when expired
+}
+function startBossAmbient(){
+  if(!audioCtx||ambientNodes.length)return;
+  const ac=audioCtx;
+  const dry=ac.createGain(); dry.gain.value=0.68;
+  const lpf=ac.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=5200;
+  dry.connect(lpf); lpf.connect(masterGain);
+  const dly=ac.createDelay(0.25); dly.delayTime.value=0.09;
+  const fb=ac.createGain(); fb.gain.value=0.12;
+  const wet=ac.createGain(); wet.gain.value=0.08;
+  dly.connect(fb); fb.connect(dly); dly.connect(wet); wet.connect(masterGain);
+  lpf.connect(dly);
+  const m2f=m=>440*Math.pow(2,(m-69)/12);
+  const BPM=getBossBPM(), B=60/BPM;
+  const now=ac.currentTime+0.05;
+  const jr=()=>(Math.random()-0.5)*0.005;
+  // Am → F → G → E7
+  const bass=[[33,36,33,40],[29,33,29,36],[31,35,31,38],[28,32,28,35]];
+  const chords=[[45,48,52,57],[41,45,48,53],[43,47,50,55],[40,44,47,52]];
+  // Phrase A (bars 0-3): original staccato articulation
+  const melA=[[69,null,72,69],[68,null,65,68],[67,null,71,67],[64,null,68,64]];
+  // Phrase B (bars 4-7): same pitches but as half-notes — choir/orchestral shape
+  const melB=[[69,null,72,null],[69,null,65,null],[67,null,71,null],[64,null,68,null]];
+  // Alto harmony for phrase B: parallel 4ths below melB (classic choir voicing)
+  const alto=melB.map(bar=>bar.map(n=>n===null?null:n-5));
+  // Inner counter-voice (both phrases)
+  const inner=[[null,64,null,62],[null,60,null,57],[null,62,null,59],[null,64,null,59]];
+
+  // Percussive short-attack note
+  function note(midi,t,dur,type,vol,detune){
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.type=type; o.frequency.value=m2f(midi);
+    if(detune)o.detune.value=detune;
+    const at=Math.max(now,t+jr());
+    g.gain.setValueAtTime(0,at);
+    g.gain.linearRampToValueAtTime(vol,at+0.007);
+    g.gain.exponentialRampToValueAtTime(vol*0.38,at+dur*0.4);
+    g.gain.exponentialRampToValueAtTime(0.0001,at+dur);
+    o.connect(g); g.connect(dry);
+    o.start(at); o.stop(at+dur+0.04);
+    ambientNodes.push(o);
+  }
+  // Long sustain with slow bow/breath attack — for choir & strings
+  function sus(midi,t,dur,type,vol,detune){
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.type=type; o.frequency.value=m2f(midi);
+    if(detune)o.detune.value=detune;
+    const at=Math.max(now,t);
+    g.gain.setValueAtTime(0,at);
+    g.gain.linearRampToValueAtTime(vol,at+0.14);          // slow bow-on / breath
+    g.gain.linearRampToValueAtTime(vol*0.80,at+dur-0.18); // gentle fall
+    g.gain.linearRampToValueAtTime(0.0001,at+dur);        // smooth release
+    o.connect(g); g.connect(dry);
+    o.start(at); o.stop(at+dur+0.1);
+    ambientNodes.push(o);
+  }
+  // Whole-bar background pad (sine drone, both phrases)
+  function pad(midi,t,dur,vol){
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.type='sine'; o.frequency.value=m2f(midi);
+    const at=Math.max(now,t);
+    g.gain.setValueAtTime(0,at);
+    g.gain.linearRampToValueAtTime(vol,at+0.22);
+    g.gain.linearRampToValueAtTime(vol,at+Math.max(0,dur-0.28));
+    g.gain.linearRampToValueAtTime(0.0001,at+dur);
+    o.connect(g); g.connect(dry);
+    o.start(at); o.stop(at+dur+0.1);
+    ambientNodes.push(o);
+  }
+
+  const BARS=8;
+  for(let bar=0;bar<BARS;bar++){
+    const ch=bar%4;
+    const phrase=bar<4?0:1;
+    const barT=now+bar*4*B;
+
+    // Background pad — whole bar, both phrases
+    chords[ch].slice(0,3).forEach(m=>pad(m-12,barT,4*B-0.06,0.034));
+
+    // Phrase 2 only: richer choir backing — 3-oscillator detuned sine pad per chord note
+    if(phrase===1){
+      chords[ch].forEach(m=>{
+        sus(m-12,barT,4*B-0.08,'sine',0.038);
+        sus(m-12,barT,4*B-0.08,'sine',0.024,12);
+        sus(m-12,barT,4*B-0.08,'sine',0.024,-12);
+      });
+    }
+
+    for(let beat=0;beat<4;beat++){
+      const t=barT+beat*B;
+      // Bass (both phrases)
+      note(bass[ch][beat]-12,t,B*0.50,'sine',0.19);
+      note(bass[ch][beat],t,B*0.52,'sawtooth',0.22);
+      note(bass[ch][beat],t,B*0.52,'sawtooth',0.10,8);
+      note(bass[ch][beat]+12,t+B*0.5,B*0.40,'triangle',0.10);
+      // Chord stabs (harder in phrase 2)
+      if(beat%2===0){
+        chords[ch].forEach(m=>note(m,t+0.008,B*0.28,'triangle',phrase===1?0.070:0.058));
+      }
+
+      if(phrase===0){
+        // PHRASE A — original staccato sawtooth melody
+        const mn=melA[ch][beat];
+        if(mn)note(mn,t,B*0.55,'sawtooth',0.080);
+        const iv=inner[ch][beat];
+        if(iv&&Math.random()<0.45)note(iv,t+B*0.1,B*0.46,'sine',0.048);
+      } else {
+        // PHRASE B — sustained choir + strings orchestration
+        const mn=melB[ch][beat];
+        if(mn){
+          // Choir soprano: 3 detuned sines give ensemble width
+          sus(mn,t,B*1.88,'sine',0.055);
+          sus(mn,t,B*1.88,'sine',0.034,10);
+          sus(mn,t,B*1.88,'sine',0.034,-10);
+          // Strings doubling: slow-bow sawtooth one octave above bass
+          sus(mn,t,B*1.88,'sawtooth',0.028);
+        }
+        // Choir alto: parallel 4ths below soprano
+        const ma=alto[ch][beat];
+        if(ma){
+          sus(ma,t+B*0.04,B*1.82,'sine',0.042);
+          sus(ma,t+B*0.04,B*1.82,'sine',0.025,8);
+          sus(ma,t+B*0.04,B*1.82,'sine',0.025,-8);
+        }
+        // Inner counter-voice denser in phrase 2
+        const iv=inner[ch][beat];
+        if(iv&&Math.random()<0.75)note(iv,t+B*0.1,B*0.46,'sine',0.048);
+      }
+    }
+  }
+  const loopMs=(BARS*4*B-0.1)*1000;
+  const tid=setTimeout(()=>{
+    ambientNodes.forEach(n=>{try{n.stop();}catch(_){}});
+    ambientNodes=[];
+    if(audioCtx&&!audioMuted&&bossMode)startBossAmbient();
+    else if(audioCtx&&!audioMuted&&!bossMode)startAmbient();
+  },loopMs);
+  ambientNodes.push({stop:()=>clearTimeout(tid)});
+}
+function toggleMute(){
+  audioMuted=!audioMuted;
+  storageSet('cubeMazeMuted',audioMuted?'1':'0');
+  if(masterGain)masterGain.gain.setTargetAtTime(audioMuted?0:0.4,audioCtx.currentTime,0.05);
+  const btn=document.getElementById('soundBtn');
+  if(btn)btn.textContent=audioMuted?'Sound: Off':'Sound: On';
+}
+// Unlock audio on first gesture (iOS requirement)
+['touchstart','mousedown','keydown'].forEach(ev=>
+  document.addEventListener(ev,()=>{
+    initAudio();
+    if(!audioMuted)startAmbient();
+  },{once:true})
+);
 
 // ---------- boot ----------
 initThree();
 startLevel(5);
 animate();
+goToMenu();
+if(!storageGet('cubeMazeTutorialSeen')){
+  document.getElementById('tutOverlay').classList.add('show');
+}
+
+// ---------- controls panel toggle ----------
+document.getElementById('ctrlsHeader').addEventListener('click',()=>{
+  document.getElementById('ctrls').classList.toggle('collapsed');
+});
+if(window.innerWidth<600){
+  document.getElementById('ctrls').classList.add('collapsed');
+}
+
+// ---------- touch controls ----------
+(()=>{
+  function td(id,fn){
+    document.getElementById(id).addEventListener('touchstart',e=>{
+      e.preventDefault();e.stopPropagation();fn();
+    },{passive:false});
+  }
+  td('dpUp',   ()=>{ if(!menuMode)tryMove(viewDir(1,0));  });
+  td('dpDown', ()=>{ if(!menuMode)tryMove(viewDir(-1,0)); });
+  td('dpLeft', ()=>{ if(!menuMode)tryMove(viewDir(0,-1)); });
+  td('dpRight',()=>{ if(!menuMode)tryMove(viewDir(0,1));  });
+  td('rpFwd',  ()=>{ if(!menuMode)tryRotate(RX);  });
+  td('rpBack', ()=>{ if(!menuMode)tryRotate(RXn); });
+  td('rpRollL',()=>{ if(!menuMode)tryRotate(RZ);  });
+  td('rpRollR',()=>{ if(!menuMode)tryRotate(RZn); });
+})();
 </script>
 </body>
 </html>
