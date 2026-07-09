@@ -15,15 +15,58 @@
   *{box-sizing:border-box}
   html,body{
     margin:0;height:100%;
-    background:
-      radial-gradient(ellipse 900px 700px at 78% -8%,#0e1a42,transparent),
-      radial-gradient(ellipse 700px 900px at -8% 68%,#0a1030,transparent),
-      #07091a;
+    background:#07091a;
     color:var(--ink);
     font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     overflow:hidden;
     overscroll-behavior:none;
     -webkit-tap-highlight-color:transparent;
+  }
+  /* ── Per-world backdrop (behind the transparent WebGL canvas) ──── */
+  #backdrop{
+    position:fixed;inset:0;z-index:0;
+    background:
+      radial-gradient(ellipse 900px 700px at 78% -8%,#0e1a42,transparent),
+      radial-gradient(ellipse 700px 900px at -8% 68%,#0a1030,transparent),
+      #07091a;
+  }
+  #backdrop.bg-ember{
+    background:
+      radial-gradient(ellipse 900px 700px at 50% 112%,#6b1f0a,transparent),
+      radial-gradient(ellipse 700px 550px at 88% 6%,#3d1006,transparent),
+      radial-gradient(ellipse 620px 520px at 6% 18%,#2a0d05,transparent),
+      #150804;
+  }
+  #backdrop.bg-vault{
+    background:
+      radial-gradient(ellipse 1000px 800px at 50% 45%,#211a4d,transparent),
+      radial-gradient(ellipse 600px 600px at 18% 15%,#2a2260,transparent),
+      radial-gradient(ellipse 520px 520px at 88% 78%,#241c55,transparent),
+      #08071a;
+  }
+  #emberField{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;display:none}
+  #emberField.show{display:block}
+  @keyframes emberRise{
+    0%{transform:translate(0,0) scale(1);opacity:0}
+    8%{opacity:1}
+    88%{opacity:.65}
+    100%{transform:translate(var(--drift,0px),-110vh) scale(.4);opacity:0}
+  }
+  .ember-dot{
+    position:absolute;bottom:-20px;border-radius:50%;
+    background:radial-gradient(circle,#ffcf7a,#ff5a1e 60%,transparent 100%);
+    box-shadow:0 0 8px 2px rgba(255,120,40,.55);
+    animation:emberRise linear infinite;
+  }
+  #starField{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;display:none}
+  #starField.show{display:block}
+  @keyframes starTwinkle{
+    0%,100%{opacity:.22}
+    50%{opacity:1}
+  }
+  .star-dot{
+    position:absolute;border-radius:50%;background:#e8dcff;
+    animation:starTwinkle ease-in-out infinite;
   }
   #scene{position:fixed;inset:0;z-index:0}
   #scene canvas{display:block;touch-action:none}
@@ -50,7 +93,9 @@
   }
   .hrow:last-child{border-bottom:none}
   .hl{color:var(--muted)}
-  .hv{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+  .hv{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums;display:inline-block}
+  @keyframes hudPop{0%{transform:scale(1)}35%{transform:scale(1.28)}100%{transform:scale(1)}}
+  .hv.pop{animation:hudPop .26s ease}
 
   /* ── Controls ───────────────────────────── */
   #ctrls{
@@ -131,6 +176,12 @@
     box-shadow:0 4px 20px rgba(184,102,245,.12);
   }
   #rotHint.show{opacity:1}
+  #rotHint.hintflash{animation:hintFlash 1.2s ease}
+  @keyframes hintFlash{
+    0%,100%{background:rgba(184,102,245,.1);box-shadow:0 4px 20px rgba(184,102,245,.12)}
+    50%{background:rgba(255,225,77,.22);border-color:rgba(255,225,77,.7);color:#fff2a8;box-shadow:0 4px 26px rgba(255,225,77,.5)}
+  }
+  body.reduce-motion #rotHint.hintflash{animation:none}
 
   /* ── Toast ──────────────────────────────── */
   #toast{
@@ -140,7 +191,7 @@
     padding:32px 44px 28px;border-radius:20px;
     background:rgba(7,10,26,.97);
     border:1px solid rgba(51,209,122,.28);
-    transition:opacity .28s,transform .28s;
+    transition:opacity .26s,transform .38s cubic-bezier(.34,1.45,.64,1);
     box-shadow:0 24px 80px rgba(0,0,0,.75),0 0 60px rgba(51,209,122,.06);
     min-width:280px;
   }
@@ -158,7 +209,7 @@
   #tutOverlay{
     position:fixed;inset:0;z-index:60;
     display:none;align-items:center;justify-content:center;
-    pointer-events:none;
+    pointer-events:auto;
     background:rgba(5,7,20,.62);backdrop-filter:blur(6px);
   }
   #tutOverlay.show{display:flex}
@@ -233,49 +284,130 @@
   #tutBannerBody{font-size:12.5px;line-height:1.5;color:var(--muted)}
   .muted{color:var(--muted)}
 
+  /* ── Campaign story overlay ───────────────── */
+  #storyOverlay{
+    position:fixed;inset:0;z-index:61;
+    display:none;align-items:center;justify-content:center;
+    pointer-events:auto;
+    background:rgba(5,7,20,.72);backdrop-filter:blur(8px);
+  }
+  #storyOverlay.show{display:flex}
+  #storyCard{
+    pointer-events:auto;max-width:440px;width:90%;text-align:left;
+    background:rgba(9,13,32,.97);
+    border:1px solid var(--border-hi);border-top:3px solid #35c3f0;border-radius:20px;
+    padding:30px 34px 26px;
+    box-shadow:0 40px 120px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.03);
+    transition:border-top-color .2s;
+  }
+  #storyOverlay.story-origin #storyCard{border-top-color:#35c3f0}
+  #storyOverlay.story-ember  #storyCard{border-top-color:#ff8a3d}
+  #storyOverlay.story-vault  #storyCard{border-top-color:#c9b8f0}
+  #storyOverlay.story-boss   #storyCard{border-top-color:#ff2c2c}
+  #storyOverlay.story-ending #storyCard{border-top-color:#f5a623}
+  #storyTitle{
+    font-size:19px;font-weight:800;letter-spacing:1.2px;color:var(--ink);
+    margin:0 0 16px;text-transform:uppercase;
+  }
+  #storyBody p{margin:0 0 13px;font-size:13.5px;line-height:1.7;color:var(--muted)}
+  #storyBody p:last-child{margin-bottom:22px}
+  #storyFooter{display:flex;align-items:center;gap:8px}
+
+  /* ── Level intro caption ──────────────────── */
+  #lvlCaption{
+    position:fixed;bottom:max(96px,calc(env(safe-area-inset-bottom) + 88px));
+    left:50%;transform:translateX(-50%) translateY(10px);
+    opacity:0;pointer-events:none;z-index:16;
+    max-width:min(420px,calc(100vw - 48px));text-align:center;
+    background:rgba(9,13,32,.88);color:var(--muted);
+    padding:8px 18px;border-radius:999px;font-size:12px;font-style:italic;line-height:1.4;
+    border:1px solid var(--border);
+    transition:transform .4s cubic-bezier(.34,1.2,.64,1),opacity .35s ease;
+  }
+  #lvlCaption.show{transform:translateX(-50%) translateY(0);opacity:1}
+
   /* ── Main Menu ──────────────────────────── */
   #mainMenu{
     position:fixed;inset:0;z-index:40;
-    display:flex;align-items:center;justify-content:center;
+    display:flex;align-items:center;justify-content:center;padding:20px;
     background:
-      radial-gradient(ellipse 150% 110% at 50% 28%,rgba(12,24,70,.82),transparent),
-      rgba(7,9,26,.88);
-    backdrop-filter:blur(4px);
+      radial-gradient(ellipse 150% 110% at 50% 22%,rgba(14,28,80,.85),transparent),
+      rgba(6,8,22,.9);
+    backdrop-filter:blur(6px);
     transition:opacity .4s;
   }
   #mainMenu.out{opacity:0;pointer-events:none}
   #menuBox{
-    display:flex;flex-direction:column;align-items:center;gap:12px;
-    padding:44px 52px 36px;
-    background:rgba(8,12,30,.94);
+    position:relative;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+    padding:34px 40px 26px;
+    background:linear-gradient(180deg,rgba(14,20,44,.96),rgba(8,11,28,.97));
     border:1px solid var(--border);
-    border-top-color:rgba(60,180,240,.22);
-    border-radius:22px;
-    box-shadow:0 48px 120px rgba(0,0,0,.82),inset 0 1px 0 rgba(255,255,255,.04);
-    min-width:300px;text-align:center;
+    border-top-color:rgba(90,212,255,.34);
+    border-radius:24px;
+    box-shadow:0 48px 130px rgba(0,0,0,.85),0 0 0 1px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06);
+    width:340px;max-width:100%;text-align:center;
+  }
+  /* soft top sheen sweeping the card */
+  #menuBox::before{
+    content:'';position:absolute;top:-40%;left:-30%;width:160%;height:80%;
+    background:radial-gradient(ellipse at center,rgba(90,180,255,.10),transparent 60%);
+    pointer-events:none;
+  }
+  /* staggered entrance — replays each time the menu opens */
+  #mainMenu:not(.out) #menuBox>*{animation:menuItemIn .5s cubic-bezier(.22,1,.36,1) both}
+  #mainMenu:not(.out) #menuHero{animation-delay:.02s}
+  #mainMenu:not(.out) #menuLevels{animation-delay:.10s}
+  #mainMenu:not(.out) #menuModes{animation-delay:.16s}
+  #mainMenu:not(.out) #menuSecondary{animation-delay:.22s}
+  #mainMenu:not(.out) #menuFooter{animation-delay:.28s}
+  @keyframes menuItemIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+  #menuHero{display:flex;flex-direction:column;align-items:center;gap:4px}
+  /* spinning wireframe cube logo */
+  #menuCubeWrap{perspective:520px;width:46px;height:46px;margin-bottom:20px;display:flex;align-items:center;justify-content:center}
+  #menuCube{position:relative;width:46px;height:46px;transform-style:preserve-3d;animation:cubeTumble 11s linear infinite}
+  .cface{
+    position:absolute;width:46px;height:46px;border:1.5px solid rgba(90,212,255,.6);border-radius:6px;
+    background:linear-gradient(135deg,rgba(53,195,240,.16),rgba(155,108,245,.16));
+    box-shadow:inset 0 0 16px rgba(70,160,255,.28);
+  }
+  .cf-fr{transform:translateZ(23px)}   .cf-bk{transform:rotateY(180deg) translateZ(23px)}
+  .cf-rt{transform:rotateY(90deg) translateZ(23px)}  .cf-lf{transform:rotateY(-90deg) translateZ(23px)}
+  .cf-tp{transform:rotateX(90deg) translateZ(23px)}  .cf-bm{transform:rotateX(-90deg) translateZ(23px)}
+  @keyframes cubeTumble{
+    from{transform:rotateX(-24deg) rotateY(0deg)}
+    to{transform:rotateX(-24deg) rotateY(360deg)}
   }
   #menuEyebrow{
-    font-size:10px;font-weight:700;letter-spacing:2px;
-    text-transform:uppercase;color:var(--accent);opacity:.68;margin:0;
+    font-size:10px;font-weight:700;letter-spacing:2.4px;
+    text-transform:uppercase;color:var(--accent);opacity:.72;margin:0;
   }
   #menuTitle{
-    font-size:38px;font-weight:900;letter-spacing:4px;margin:4px 0 0;line-height:1;
-    background:linear-gradient(125deg,#5ad4ff 0%,#38c0f0 35%,#9b6cf5 72%,#c777ff 100%);
+    font-size:34px;font-weight:900;letter-spacing:3.5px;margin:2px 0 0;line-height:1;white-space:nowrap;
+    background:linear-gradient(100deg,#5ad4ff 0%,#38c0f0 28%,#9b6cf5 62%,#c777ff 88%,#5ad4ff 130%);
+    background-size:220% 100%;
     -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    filter:drop-shadow(0 2px 18px rgba(80,160,255,.28));
+    animation:titleShimmer 7s ease-in-out infinite;
   }
-  #menuSub{font-size:12.5px;color:var(--muted);margin:2px 0 0;line-height:1.6;max-width:230px}
-  #menuDivider{width:100%;height:1px;background:var(--border)}
-  /* Endless mode badge inside menu button */
-  #endlessBadge{
-    display:block;font-size:10px;font-weight:400;
-    color:var(--muted);margin-top:3px;opacity:.8;letter-spacing:.2px;
-  }
+  @keyframes titleShimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+  #menuSub{font-size:12px;color:var(--muted);margin:3px 0 0;line-height:1.55;max-width:240px}
+  /* Endless "continue" badge shown inside its mode card */
+  #endlessBadge:empty{display:none}
   /* Endless win toast — show Next, hide everything else */
   #toast.endlessmode #toastStars{display:none}
   #toast.endlessmode #toastMap{display:none}
   #toast.endlessmode #toastRetry{display:none}
   #toast.endlessmode #toastBtn{display:none}
   #toast.endlessmode #toastNext{display:inline-block}
+  /* Ghost Chase — caught/escaped toast: show Retry + Menu only */
+  #toast.ghostmode #toastStars{display:none}
+  #toast.ghostmode #toastMap{display:none}
+  #toast.ghostmode #toastNext{display:none}
+  #toast.ghostmode #toastShare{display:none}
+  #toast.ghostmode #toastRetry{display:inline-block}
+  #toast.ghostmode #toastBtn{display:inline-block}
   /* Always hide the in-game size selector (size is determined by game mode now) */
   #sizeCtrl{display:none !important}
   /* Boss level — pulsing red vignette border */
@@ -289,35 +421,58 @@
     0%,100%{box-shadow:inset 0 0 60px rgba(255,0,0,.22),inset 0 0 160px rgba(255,0,0,.08);border-color:rgba(255,40,40,.35);}
     50%{box-shadow:inset 0 0 100px rgba(255,0,0,.52),inset 0 0 240px rgba(255,0,0,.24);border-color:rgba(255,40,40,.84);}
   }
-  #menuTutBtn{
-    cursor:pointer;padding:8px 20px;border-radius:8px;font-size:12.5px;
-    border:1px solid transparent;background:transparent;
-    color:var(--dim);font-family:inherit;transition:.14s;
-  }
-  #menuTutBtn:hover{color:var(--muted);background:rgba(255,255,255,.04);border-color:rgba(60,80,140,.28)}
+  /* Primary CTA — Play Levels */
   #menuLevels{
-    cursor:pointer;width:100%;padding:14px;border-radius:11px;
-    font-size:15px;font-weight:700;
-    border:1px solid rgba(53,195,240,.44);
-    background:linear-gradient(150deg,rgba(53,195,240,.18),rgba(32,130,200,.22));
-    color:var(--accent);font-family:inherit;letter-spacing:.7px;
-    box-shadow:0 4px 24px rgba(53,195,240,.14);transition:.14s;
+    cursor:pointer;width:100%;display:flex;align-items:center;gap:12px;
+    padding:13px 16px;border-radius:14px;font-family:inherit;text-align:left;
+    border:1px solid rgba(90,212,255,.5);
+    background:linear-gradient(135deg,rgba(53,195,240,.22),rgba(120,90,240,.2));
+    box-shadow:0 6px 26px rgba(53,195,240,.18),inset 0 1px 0 rgba(255,255,255,.08);
+    transition:.16s;
   }
   #menuLevels:hover{
-    background:linear-gradient(150deg,rgba(53,195,240,.27),rgba(32,130,200,.32));
-    border-color:rgba(53,195,240,.68);
-    box-shadow:0 8px 32px rgba(53,195,240,.26);transform:translateY(-1px);
+    border-color:rgba(120,220,255,.8);
+    box-shadow:0 10px 34px rgba(53,195,240,.32),inset 0 1px 0 rgba(255,255,255,.12);
+    transform:translateY(-2px);
   }
   #menuLevels:active{transform:translateY(0)}
-  #menuPlay{
-    cursor:pointer;width:100%;padding:10px;border-radius:9px;
-    font-size:13px;font-weight:600;
-    border:1px solid rgba(60,80,140,.42);
-    background:rgba(16,23,55,.72);
-    color:var(--muted);font-family:inherit;transition:.12s;
+  #menuLevels .ml-icon{font-size:24px;line-height:1;filter:drop-shadow(0 1px 4px rgba(0,0,0,.4))}
+  #menuLevels .ml-label{display:flex;flex-direction:column;flex:1;line-height:1.2}
+  #menuLevels .ml-label b{font-size:15.5px;font-weight:800;color:#eaf6ff;letter-spacing:.4px}
+  #menuLevels .ml-label small{font-size:10.5px;color:rgba(200,220,255,.6);margin-top:2px}
+  #menuLevels .ml-arrow{font-size:18px;color:var(--accent);opacity:.7;transition:.16s}
+  #menuLevels:hover .ml-arrow{opacity:1;transform:translateX(3px)}
+
+  /* Mode cards — Endless / Daily / Ghost Chase */
+  #menuModes{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;width:100%}
+  .mode-card{
+    cursor:pointer;position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;
+    padding:13px 6px 10px;border-radius:13px;font-family:inherit;min-height:82px;justify-content:center;
+    border:1px solid rgba(60,80,140,.42);background:rgba(18,26,58,.66);
+    color:var(--muted);transition:.16s;
   }
-  #menuPlay:hover{background:rgba(28,40,88,.78);border-color:rgba(60,180,240,.32);color:var(--ink)}
-  #menuFooter{font-size:10.5px;color:var(--dim);margin-top:2px;letter-spacing:.3px;opacity:.7}
+  .mode-card:hover{
+    background:rgba(30,44,92,.88);border-color:var(--border-hi);color:var(--ink);
+    transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.42);
+  }
+  .mode-emoji{font-size:23px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
+  .mode-name{font-size:11px;font-weight:700;letter-spacing:.2px;color:var(--ink)}
+  .mode-badge{font-size:9px;font-weight:700;color:var(--accent2);letter-spacing:.2px;line-height:1}
+  .mode-badge:empty{display:none}
+  #menuGhost{border-color:rgba(255,77,109,.42)}
+  #menuGhost:hover{border-color:rgba(255,120,150,.72);box-shadow:0 8px 22px rgba(255,77,109,.2)}
+  #menuDailyBadge{color:var(--good)}
+
+  /* Secondary pill row — Tutorial / Character / Trail / Achievements / Themes */
+  #menuSecondary{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;width:100%;margin-top:2px}
+  #menuSecondary button{
+    cursor:pointer;padding:7px 12px;border-radius:9px;font-size:11.5px;font-family:inherit;font-weight:600;
+    border:1px solid rgba(60,80,140,.28);background:rgba(255,255,255,.02);
+    color:var(--muted);transition:.14s;
+  }
+  #menuSecondary button:hover{color:var(--ink);background:rgba(80,140,230,.12);border-color:var(--border-hi);transform:translateY(-1px)}
+  #menuThemes{display:none}
+  #menuFooter{font-size:10px;color:var(--dim);margin:6px 0 0;letter-spacing:.3px;opacity:.75}
 
   /* ── Level Select ───────────────────────── */
   #levelSelect{
@@ -377,10 +532,15 @@
   }
   .world-header:first-child{padding-top:2px}
   .world-hr{flex:1;height:1px;background:currentColor;opacity:.2}
+  .world-tagline{
+    grid-column:1/-1;text-align:center;
+    font-size:10.5px;font-style:italic;opacity:.65;margin:-4px 0 6px;
+  }
 
   /* Toast — level mode */
   #toastStars{display:none;font-size:22px;letter-spacing:4px;margin:0 0 8px}
   #toast.levelmode #toastStars{display:block}
+  #toast.freeplay #toastStars{display:block}
   #toastMap{display:none}
   #toast.levelmode #toastMap{display:inline-block}
   #toast.levelmode #toastBtn{display:none}
@@ -424,7 +584,7 @@
   /* ── Undo button ────────────────────────── */
   #undoBtn{
     position:fixed;z-index:20;display:none;
-    bottom:max(20px,calc(env(safe-area-inset-bottom) + 12px));
+    bottom:max(116px,calc(env(safe-area-inset-bottom) + 108px));
     left:50%;transform:translateX(-50%);
     background:rgba(16,23,55,.88);
     border:1px solid rgba(60,80,140,.5);border-radius:999px;
@@ -438,22 +598,250 @@
   @media (hover:hover) and (pointer:fine){
     #dpad,#rotPad{display:none !important;}
   }
+
+  /* ── Win particles ──────────────────────────── */
+  #particles{position:fixed;inset:0;z-index:8;pointer-events:none;overflow:hidden}
+  @keyframes particleFly{
+    0%{transform:translate(-50%,-50%);opacity:1;scale:1}
+    100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy)));opacity:0;scale:0.4}
+  }
+  .particle{
+    position:absolute;left:50%;top:50%;
+    width:var(--sz,8px);height:var(--sz,8px);border-radius:50%;
+    background:var(--col,#5affa1);
+    animation:particleFly var(--dur,.9s) var(--delay,0s) ease-out forwards;
+  }
+
+  /* ── Achievement slide-in toast ─────────────── */
+  #achieveToast{
+    position:fixed;top:max(76px,calc(env(safe-area-inset-top) + 66px));
+    left:50%;transform:translateX(-50%) translateY(-24px) scale(.85);
+    opacity:0;pointer-events:none;z-index:50;
+    background:rgba(245,166,35,.97);color:#000;
+    padding:10px 22px;border-radius:999px;font-size:13px;font-weight:700;
+    white-space:nowrap;
+    transition:transform .38s cubic-bezier(.34,1.56,.64,1),opacity .28s ease;
+    box-shadow:0 8px 28px rgba(0,0,0,.45);
+  }
+  #achieveToast.show{
+    transform:translateX(-50%) translateY(0) scale(1);
+    opacity:1;
+    animation:achieveToastPop .48s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes achieveToastPop{
+    0%{transform:translateX(-50%) translateY(-24px) scale(.85)}
+    55%{transform:translateX(-50%) translateY(2px) scale(1.08)}
+    100%{transform:translateX(-50%) translateY(0) scale(1)}
+  }
+
+  /* ── Daily toast mode ───────────────────────── */
+  #toast.dailymode #toastStars{display:none}
+  #toast.dailymode #toastMap{display:none}
+  #toast.dailymode #toastNext{display:none}
+  #toast.dailymode #toastRetry{display:none}
+  #toast.dailymode #toastBtn{display:inline-block}
+  #toastShare{display:none}
+
+  /* ── Overlay boxes (achievements, themes, character, trail) ───── */
+  #achieveBox,#themeBox,#charBox,#trailBox,#settingsBox{
+    position:fixed;inset:0;z-index:41;
+    display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse 150% 110% at 50% 28%,rgba(12,24,70,.82),transparent),rgba(7,9,26,.88);
+    backdrop-filter:blur(4px);transition:opacity .4s;
+  }
+  #achieveBox.out,#themeBox.out,#charBox.out,#trailBox.out,#settingsBox.out{opacity:0;pointer-events:none}
+  /* Settings panel rows */
+  .set-row{display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:13px 2px;border-bottom:1px solid rgba(55,65,110,.22)}
+  .set-row:last-child{border-bottom:0}
+  .set-label{font-size:13px;font-weight:600;color:var(--ink)}
+  .set-desc{font-size:10.5px;color:var(--muted);margin-top:2px;max-width:260px}
+  .set-ctl{flex-shrink:0}
+  /* iOS-style toggle */
+  .switch{position:relative;width:46px;height:26px;cursor:pointer;flex-shrink:0}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .switch .track{position:absolute;inset:0;border-radius:13px;background:rgba(60,80,140,.4);
+    transition:.16s;border:1px solid rgba(90,110,170,.35)}
+  .switch .knob{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
+    background:#dfe6fb;transition:.16s;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .switch input:checked + .track{background:linear-gradient(120deg,var(--accent),#6a8cff);border-color:transparent}
+  .switch input:checked + .track + .knob{transform:translateX(20px)}
+  #setVolume{width:150px;accent-color:var(--accent);cursor:pointer}
+  /* Reduced-motion: silence the decorative animations/transitions */
+  body.reduce-motion #menuTitle{animation:none}
+  body.reduce-motion #menuCube{animation:none;transform:rotateX(-24deg) rotateY(-32deg)}
+  body.reduce-motion #mainMenu:not(.out) #menuBox>*{animation:none}
+  body.reduce-motion .hv.pop{animation:none}
+  body.reduce-motion #toast{transition:opacity .2s}
+  body.reduce-motion #menuLevels:hover,body.reduce-motion .mode-card:hover{transform:none}
+  .picker-section-title{
+    font-size:10px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;
+    color:var(--dim);margin:18px 0 10px;
+  }
+  .picker-section-title:first-child{margin-top:0}
+  .overlay-box{
+    width:540px;max-width:calc(100vw - 32px);max-height:80vh;overflow-y:auto;
+    background:rgba(8,12,30,.94);border:1px solid var(--border);
+    border-top-color:rgba(60,180,240,.22);border-radius:22px;padding:28px;
+    box-shadow:0 48px 120px rgba(0,0,0,.82),inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .overlay-header{display:flex;align-items:center;gap:12px;margin:0 0 18px}
+  .overlay-back{
+    cursor:pointer;border:1px solid rgba(60,80,140,.42);background:rgba(16,23,55,.72);
+    color:var(--muted);border-radius:8px;padding:7px 12px;font-size:12.5px;
+    font-family:inherit;transition:.12s;
+  }
+  .overlay-back:hover{background:rgba(28,40,88,.78);border-color:rgba(60,180,240,.32);color:var(--ink)}
+  .overlay-title{
+    font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+    color:var(--accent);opacity:.72;flex:1;text-align:center;
+  }
+
+  /* Achievement grid */
+  #achieveGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  @media(max-width:520px){#achieveGrid{grid-template-columns:repeat(2,1fr)}}
+  .ach-card{
+    border-radius:12px;padding:14px 10px 12px;text-align:center;
+    border:1px solid rgba(60,80,140,.4);background:rgba(16,23,55,.72);
+    display:flex;flex-direction:column;align-items:center;gap:5px;
+    opacity:0;transform:translateY(10px) scale(.9);
+    animation:achCardIn .42s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  @keyframes achCardIn{
+    0%{opacity:0;transform:translateY(10px) scale(.9)}
+    100%{opacity:1;transform:translateY(0) scale(1)}
+  }
+  .ach-card.earned{
+    border-color:rgba(245,166,35,.45);background:rgba(245,166,35,.07);
+    animation:achCardIn .42s cubic-bezier(.34,1.56,.64,1) forwards,achGlow 2.2s ease 1;
+  }
+  @keyframes achGlow{
+    0%{box-shadow:0 0 0 rgba(245,166,35,0)}
+    35%{box-shadow:0 0 18px rgba(245,166,35,.55)}
+    100%{box-shadow:0 0 0 rgba(245,166,35,0)}
+  }
+  .ach-title{font-size:11px;font-weight:700;color:var(--ink);line-height:1.2}
+  .ach-desc{font-size:9.5px;color:var(--muted);line-height:1.4}
+  .ach-card.locked .ach-title{color:var(--dim)}
+
+  /* Theme grid */
+  #themeGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .theme-card{
+    cursor:pointer;border-radius:12px;padding:14px 14px 12px;
+    border:1px solid rgba(60,80,140,.4);background:rgba(16,23,55,.72);
+    display:flex;flex-direction:column;gap:5px;transition:.14s;
+    font-family:inherit;text-align:left;
+  }
+  .theme-card:hover:not(.locked){background:rgba(28,40,88,.85);border-color:rgba(60,180,240,.35)}
+  .theme-card.active-theme{border-color:rgba(53,195,240,.5);background:rgba(53,195,240,.1)}
+  .theme-card.locked{cursor:default;opacity:.42;filter:grayscale(.4)}
+  .theme-name{font-size:13px;font-weight:700;color:var(--ink)}
+  .theme-desc{font-size:10.5px;color:var(--muted)}
+
+  /* Character skin grid */
+  #charGrid,#trailColorGrid,#trailStyleGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:520px){#charGrid,#trailColorGrid,#trailStyleGrid{grid-template-columns:repeat(3,1fr)}}
+  .skin-card{
+    cursor:pointer;border-radius:14px;padding:12px 8px 10px;
+    border:1px solid rgba(60,80,140,.4);background:rgba(16,23,55,.72);
+    display:flex;flex-direction:column;align-items:center;gap:7px;transition:.14s;
+    font-family:inherit;
+  }
+  .skin-card:hover{background:rgba(28,40,88,.85);border-color:rgba(60,180,240,.35);transform:translateY(-2px)}
+  .skin-card.active-skin{border-color:rgba(53,195,240,.6);background:rgba(53,195,240,.12);
+    box-shadow:0 0 16px rgba(53,195,240,.18)}
+  .skin-chip{
+    width:48px;height:48px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:27px;line-height:1;
+    background:radial-gradient(circle at 40% 30%,var(--chip-col,#334),rgba(0,0,0,.45));
+    border:1px solid rgba(255,255,255,.10);
+    box-shadow:inset 0 -3px 7px rgba(0,0,0,.4),0 0 13px var(--chip-glow,transparent);
+  }
+  .skin-card:hover .skin-chip{transform:scale(1.06)}
+  /* 3D model preview chip (character picker) */
+  .skin-chip.thumb-chip{
+    width:56px;height:56px;padding:0;overflow:hidden;font-size:0;
+    background:radial-gradient(circle at 50% 38%,rgba(70,92,165,.4),rgba(6,10,26,.72));
+  }
+  .skin-chip.thumb-chip img{width:100%;height:100%;object-fit:contain;display:block}
+  .skin-name{font-size:11px;font-weight:700;color:var(--ink)}
+  /* Locked / priced cosmetics */
+  .skin-card.locked .skin-chip{filter:grayscale(.55) brightness(.8)}
+  .skin-price{font-size:10px;font-weight:700;color:var(--accent2);letter-spacing:.2px;margin-top:-2px}
+  .skin-card.cant-afford{opacity:.55}
+  .skin-card.cant-afford .skin-price{color:var(--danger)}
+  /* Coin balance chip */
+  .coin-chip{
+    display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;
+    color:var(--accent2);background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.35);
+    padding:4px 10px;border-radius:999px;letter-spacing:.3px;
+  }
+  #menuCoins{position:absolute;top:14px;right:16px}
+  #charHint{font-size:11px;color:var(--muted);text-align:center;margin:16px 0 2px}
+
 </style>
 </head>
 <body>
+<div id="backdrop" class="bg-origin"></div>
+<div id="emberField"></div>
+<div id="starField"></div>
 <div id="scene"></div>
 <div id="bossOverlay"></div>
+<div id="particles"></div>
+<div id="achieveToast"></div>
 
 <div id="mainMenu">
   <div id="menuBox">
-    <p id="menuEyebrow">3D Navigation Puzzle</p>
-    <h1 id="menuTitle">CUBE MAZE</h1>
-    <p id="menuSub">Each face hides another layer.<br>Rotate the cube to unlock new paths.</p>
-    <div id="menuDivider"></div>
-    <button id="menuLevels">Play Levels</button>
-    <button id="menuPlay">▶&nbsp;&nbsp;Endless Mode<span id="endlessBadge"></span></button>
-    <button id="menuTutBtn">Tutorial</button>
-    <p id="menuFooter">WASD / arrows · Q E R F rotate · drag to orbit</p>
+    <div id="menuCoins" class="coin-chip" title="Coins — earn by winning, spend on Character & Trail">🪙 <span class="coin-count">0</span></div>
+    <div id="menuHero">
+      <div id="menuCubeWrap" aria-hidden="true">
+        <div id="menuCube">
+          <span class="cface cf-fr"></span><span class="cface cf-bk"></span>
+          <span class="cface cf-rt"></span><span class="cface cf-lf"></span>
+          <span class="cface cf-tp"></span><span class="cface cf-bm"></span>
+        </div>
+      </div>
+      <p id="menuEyebrow">3D Navigation Puzzle</p>
+      <h1 id="menuTitle">CUBE MAZE</h1>
+      <p id="menuSub">Each face hides another layer.<br>Rotate the cube to unlock new paths.</p>
+    </div>
+
+    <button id="menuLevels">
+      <span class="ml-icon">🗺️</span>
+      <span class="ml-label"><b>Play Levels</b><small>30 hand-crafted stages</small></span>
+      <span class="ml-arrow">→</span>
+    </button>
+
+    <div id="menuModes">
+      <button id="menuPlay" class="mode-card">
+        <span class="mode-emoji">♾️</span><span class="mode-name">Endless</span>
+        <span id="endlessBadge" class="mode-badge"></span>
+      </button>
+      <button id="menuDaily" class="mode-card">
+        <span class="mode-emoji">📅</span><span class="mode-name">Daily</span>
+        <span id="menuDailyBadge" class="mode-badge"></span>
+      </button>
+      <button id="menuWeekly" class="mode-card">
+        <span class="mode-emoji">🏆</span><span class="mode-name">Weekly</span>
+        <span id="menuWeeklyBadge" class="mode-badge"></span>
+      </button>
+      <button id="menuGhost" class="mode-card">
+        <span class="mode-emoji">👻</span><span class="mode-name">Ghost&nbsp;Chase</span>
+        <span class="mode-badge"></span>
+      </button>
+    </div>
+
+    <div id="menuSecondary">
+      <button id="menuTutBtn">Tutorial</button>
+      <button id="menuCharacter">Character</button>
+      <button id="menuTrail">Trail</button>
+      <button id="menuSettings">Settings</button>
+      <button id="menuAchieve">Achievements</button>
+      <button id="menuThemes">Themes</button>
+    </div>
+
+    <p id="menuFooter">WASD / arrows&nbsp;·&nbsp;Q E R F rotate&nbsp;·&nbsp;drag to orbit</p>
   </div>
 </div>
 
@@ -472,6 +860,7 @@
   <div id="hudTitle">CUBE MAZE</div>
   <div class="hrow"><span class="hl">Layer</span><b class="hv" id="hLayer">–</b></div>
   <div class="hrow"><span class="hl" id="hBudgetLabel">Budget left</span><b class="hv" id="hBudget">–</b></div>
+  <div class="hrow" id="hKeysRow" style="display:none"><span class="hl">Keys</span><b class="hv" id="hKeys">–</b></div>
 </div>
 
 <div id="ctrls">
@@ -496,9 +885,11 @@
       <div class="ctrl-divider"></div>
     </div>
     <button class="btn btn-primary" id="restart">↻ New Cube</button>
+    <button class="btn" id="hintBtn">💡 Hint</button>
     <button class="btn" id="solve">Auto-solve</button>
     <div class="ctrl-divider"></div>
     <button class="btn btn-ghost" id="soundBtn">Sound: On</button>
+    <button class="btn btn-ghost" id="settingsBtn">⚙ Settings</button>
     <button class="btn btn-ghost" id="tutorialBtn">Tutorial</button>
     <button class="btn btn-ghost" id="menuBtn">☰ Menu</button>
   </div>
@@ -560,6 +951,19 @@
   </div>
 </div>
 
+<div id="storyOverlay">
+  <div id="storyCard">
+    <h2 id="storyTitle"></h2>
+    <div id="storyBody"></div>
+    <div id="storyFooter">
+      <button class="btn btn-ghost" id="storyBtn2" style="display:none"></button>
+      <div style="flex:1"></div>
+      <button class="btn btn-primary" id="storyBtn1"></button>
+    </div>
+  </div>
+</div>
+<div id="lvlCaption"></div>
+
 <div id="tutBanner">
   <div id="tutBannerInner">
     <div id="tutBannerTop">
@@ -579,6 +983,79 @@
     <button class="btn" id="toastMap">← Levels</button>
     <button class="btn btn-primary" id="toastBtn">✦ New Cube</button>
     <button class="btn btn-primary" id="toastNext">Next ▸</button>
+    <button class="btn btn-primary" id="toastShare">Share</button>
+  </div>
+</div>
+
+<div id="achieveBox" class="out">
+  <div class="overlay-box">
+    <div class="overlay-header">
+      <button class="overlay-back" id="achieveBack">← Menu</button>
+      <span class="overlay-title">Achievements</span>
+      <span id="achieveTotal" style="font-size:12px;color:var(--dim)"></span>
+    </div>
+    <div id="achieveGrid"></div>
+  </div>
+</div>
+
+<div id="themeBox" class="out">
+  <div class="overlay-box">
+    <div class="overlay-header">
+      <button class="overlay-back" id="themeBack">← Menu</button>
+      <span class="overlay-title">Themes</span>
+    </div>
+    <div id="themeGrid"></div>
+  </div>
+</div>
+
+<div id="charBox" class="out">
+  <div class="overlay-box">
+    <div class="overlay-header">
+      <button class="overlay-back" id="charBack">← Menu</button>
+      <span class="overlay-title">Character</span>
+      <span class="coin-chip">🪙 <span class="coin-count">0</span></span>
+    </div>
+    <div id="charGrid"></div>
+    <p id="charHint">Pick your explorer — they'll roam every maze.</p>
+  </div>
+</div>
+
+<div id="trailBox" class="out">
+  <div class="overlay-box">
+    <div class="overlay-header">
+      <button class="overlay-back" id="trailBack">← Menu</button>
+      <span class="overlay-title">Trail</span>
+      <span class="coin-chip">🪙 <span class="coin-count">0</span></span>
+    </div>
+    <p class="picker-section-title">Colour</p>
+    <div id="trailColorGrid"></div>
+    <p class="picker-section-title">Style</p>
+    <div id="trailStyleGrid"></div>
+  </div>
+</div>
+
+<div id="settingsBox" class="out">
+  <div class="overlay-box">
+    <div class="overlay-header">
+      <button class="overlay-back" id="settingsBack">← Menu</button>
+      <span class="overlay-title">Settings</span>
+    </div>
+    <div class="set-row">
+      <div><div class="set-label">Volume</div><div class="set-desc">Sound effects &amp; ambient music</div></div>
+      <input class="set-ctl" type="range" id="setVolume" min="0" max="100" value="40">
+    </div>
+    <div class="set-row">
+      <div><div class="set-label">Reduced motion</div><div class="set-desc">Turn off hops, shake, particles &amp; flourishes</div></div>
+      <label class="switch"><input type="checkbox" id="setReduceMotion"><span class="track"></span><span class="knob"></span></label>
+    </div>
+    <div class="set-row">
+      <div><div class="set-label">Colourblind cues</div><div class="set-desc">High-contrast palette + a ring marker on pivots</div></div>
+      <label class="switch"><input type="checkbox" id="setColorblind"><span class="track"></span><span class="knob"></span></label>
+    </div>
+    <div class="set-row">
+      <div><div class="set-label">Haptics</div><div class="set-desc">Vibrate on each move (supported devices)</div></div>
+      <label class="switch"><input type="checkbox" id="setHaptics"><span class="track"></span><span class="knob"></span></label>
+    </div>
   </div>
 </div>
 
@@ -650,6 +1127,22 @@ function genMaze(N,rng){
 function isOpen(open,N,c,d){
   return open[c[0]+','+c[1]+','+c[2]].has(dirKey(d));
 }
+// ONE PLAYER ACTION: step from `c` along cube-dir `hd`, then keep sliding while
+// standing on ice with the passage ahead open. Returns the final cell or null
+// if the first step is illegal. This is THE movement rule — the game
+// (tryMove) and the solvers (solveBFS/solvePathFor) all call it, so they can
+// never disagree about where a move ends.
+function stepDest(open,N,ice,c,hd){
+  if(!isOpen(open,N,c,hd))return null;
+  let cur=[c[0]+hd[0],c[1]+hd[1],c[2]+hd[2]];
+  if(cur[0]<0||cur[1]<0||cur[2]<0||cur[0]>=N||cur[1]>=N||cur[2]>=N)return null;
+  if(ice)while(ice.has(cur.join(','))&&isOpen(open,N,cur,hd)){
+    const n=[cur[0]+hd[0],cur[1]+hd[1],cur[2]+hd[2]];
+    if(n[0]<0||n[1]<0||n[2]<0||n[0]>=N||n[1]>=N||n[2]>=N)break;
+    cur=n;
+  }
+  return cur;
+}
 
 // ---------- play-state graph: state = (cell, orientationIndex) ----------
 // Horizontal moves: the two cube-axes not equal to the current up cube-axis.
@@ -664,45 +1157,138 @@ function horizDirs(R){ // cube-frame unit dirs for world W/S/A/D
 }
 const ROT_OPS=[RZ,RZn,RX,RXn]; // Q,E,R,F
 
-function solveBFS(open,N,pivots,startCell,startOri){
-  const key=(c,o)=>c[0]+','+c[1]+','+c[2]+'|'+o;
+// opts (all optional): {ice:Set<"x,y,z">, keys:[[x,y,z],...]}. With keys, the
+// BFS state carries a collected-keys bitmask and cellBest only counts states
+// holding EVERY key — so `par` for a keyed level includes the key detours.
+// Without opts the behavior is identical to the classic solver.
+function solveBFS(open,N,pivots,startCell,startOri,opts){
+  opts=opts||{};
+  const ice=opts.ice,keys=opts.keys||[];
+  const full=(1<<keys.length)-1;
+  const bitOf=c=>{for(let i=0;i<keys.length;i++)if(keys[i][0]===c[0]&&keys[i][1]===c[1]&&keys[i][2]===c[2])return 1<<i;return 0;};
+  const key=(c,o,m)=>c[0]+','+c[1]+','+c[2]+'|'+o+'|'+m;
+  const m0=bitOf(startCell);
   const dist=new Map();const q=[];
-  const s={c:startCell,o:startOri};dist.set(key(startCell,startOri),0);q.push(s);
+  const s={c:startCell,o:startOri,m:m0};dist.set(key(startCell,startOri,m0),0);q.push(s);
   let head=0;const far={cell:startCell,d:-1,needsRot:false};
-  const camePivot=new Map(); // track if path used a rotation (approx: store rot count via dist parity not exact)
-  const rotUsed=new Map();rotUsed.set(key(startCell,startOri),false);
+  const rotUsed=new Map();rotUsed.set(key(startCell,startOri,m0),false);
   while(head<q.length){
-    const {c,o}=q[head++];const R=ORIENTS.list[o];const kk=key(c,o);
+    const {c,o,m}=q[head++];const R=ORIENTS.list[o];const kk=key(c,o,m);
     const d0=dist.get(kk);const usedRot=rotUsed.get(kk);
     // record farthest cell (best distance), prefer reachable cells needing rotation
     if(d0>far.d||(d0===far.d&&usedRot&&!far.needsRot)){far.cell=c;far.d=d0;far.needsRot=usedRot;}
-    // horizontal moves
+    // horizontal moves (one action = step + any ice slide)
     for(const hd of horizDirs(R)){
-      const nc=[c[0]+hd[0],c[1]+hd[1],c[2]+hd[2]];
-      if(nc[0]<0||nc[1]<0||nc[2]<0||nc[0]>=N||nc[1]>=N||nc[2]>=N)continue;
-      if(!isOpen(open,N,c,hd))continue;
-      const nk=key(nc,o);if(dist.has(nk))continue;
-      dist.set(nk,d0+1);rotUsed.set(nk,usedRot);q.push({c:nc,o});
+      const nc=stepDest(open,N,ice,c,hd);
+      if(!nc)continue;
+      const nm=m|bitOf(nc);
+      const nk=key(nc,o,nm);if(dist.has(nk))continue;
+      dist.set(nk,d0+1);rotUsed.set(nk,usedRot);q.push({c:nc,o,m:nm});
     }
     // rotations on pivot — cost 0 (0-1 BFS: insert before current head)
     if(pivots.has(c[0]+','+c[1]+','+c[2])){
       for(const G of ROT_OPS){
         const nR=matMul(G,R);const no=orientIndex(nR);
-        const nk=key(c,no);if(dist.has(nk))continue;
-        dist.set(nk,d0);rotUsed.set(nk,true);q.splice(head,0,{c,o:no});
+        const nk=key(c,no,m);if(dist.has(nk))continue;
+        dist.set(nk,d0);rotUsed.set(nk,true);q.splice(head,0,{c,o:no,m});
       }
     }
   }
-  // collect distance to each cell (min over orientations) for goal selection
+  // distance to each cell (min over orientations; keys, if any, all collected)
   const cellBest=new Map();
-  for(const [k,d] of dist){const cell=k.split('|')[0];
-    if(!cellBest.has(cell)||d<cellBest.get(cell))cellBest.set(cell,d);}
+  for(const [k,d] of dist){
+    const parts=k.split('|');
+    if(+parts[2]!==full)continue;
+    const cell=parts[0];
+    if(!cellBest.has(cell)||d<cellBest.get(cell))cellBest.set(cell,d);
+  }
   return {dist,cellBest};
 }
 
 // ---------- build a full, solvable level ----------
 function makeRng(seed){let s=seed>>>0;return ()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
-function buildLevel(N,seed){
+// In-place Fisher-Yates using a seeded rng (deterministic per seed).
+function shuffleRng(arr,rng){for(let i=arr.length-1;i>0;i--){const j=(rng()*(i+1))|0;const t=arr[i];arr[i]=arr[j];arr[j]=t;}return arr;}
+// Inject a tile mechanic into an already-generated maze. Returns solver opts
+// ({ice} | {keys} | {}), mutating `open` in place for one-ways. Returns null if
+// the maze can't host the mechanic this attempt (caller retries a new seed).
+// The caller ALWAYS re-solves and re-picks the goal afterward, so whatever this
+// produces is validated for solvability — a bad injection just fails the attempt.
+function injectMechanic(mech,open,N,pivots,startCell,startOri,rng){
+  const startKey=startCell.join(',');
+  if(mech==='ice'){
+    // Freeze ~35% of the reachable, non-pivot floor. Ice makes you slide, so the
+    // re-solve has to still find a stoppable route; excluding pivots keeps them
+    // usable for rotation (you can't rotate on a tile you slide off of).
+    const {cellBest}=solveBFS(open,N,pivots,startCell,startOri);
+    const cand=[...cellBest.keys()].filter(k=>k!==startKey&&!pivots.has(k));
+    if(cand.length<2)return null;
+    shuffleRng(cand,rng);
+    const n=Math.max(1,Math.round(cand.length*0.35));
+    return {ice:new Set(cand.slice(0,n))};
+  }
+  if(mech==='keys'){
+    // Scatter a few gate keys on reachable cells; the goal only "counts" once
+    // every key is collected (solveBFS enforces this via its full-mask filter).
+    const {cellBest}=solveBFS(open,N,pivots,startCell,startOri);
+    const cand=[...cellBest.entries()].filter(([k,d])=>d>=2&&k!==startKey&&!pivots.has(k)).map(([k])=>k);
+    if(cand.length<2)return null;
+    shuffleRng(cand,rng);
+    const nk=N<=5?2:3;
+    return {keys:cand.slice(0,Math.min(nk,cand.length)).map(k=>k.split(',').map(Number))};
+  }
+  if(mech==='oneway'){
+    // Turn ~18% of two-way passages into one-way amber gates by dropping the
+    // reverse edge. `open` is directional, so deleting b->a leaves a->b crossable.
+    const passages=[];
+    for(let x=0;x<N;x++)for(let y=0;y<N;y++)for(let z=0;z<N;z++){
+      const c=[x,y,z];
+      for(const dir of DIRS){
+        if(dir[0]+dir[1]+dir[2]<=0)continue;   // one representative per undirected edge
+        if(!isOpen(open,N,c,dir))continue;
+        const nc=[x+dir[0],y+dir[1],z+dir[2]];
+        if(nc[0]>=N||nc[1]>=N||nc[2]>=N)continue;
+        if(isOpen(open,N,nc,negDir(dir)))passages.push([c,nc,dir]);
+      }
+    }
+    if(!passages.length)return null;
+    shuffleRng(passages,rng);
+    const n=Math.max(2,Math.round(passages.length*0.18));
+    for(let i=0;i<n&&i<passages.length;i++){
+      const [,nc,dir]=passages[i];
+      open[nc.join(',')].delete(dirKey(negDir(dir)));   // one-way: keep c->nc, drop nc->c
+    }
+    return {};
+  }
+  return null;
+}
+// A copy of `open` where every ice cell is impassable (all edges into/out of it
+// removed). Solving this models "can the goal be reached WITHOUT touching ice?" —
+// if not, the ice is on the only route and is genuinely required.
+function openAvoidingIce(open,N,ice){
+  const o={};for(const k in open)o[k]=new Set(open[k]);
+  for(const ik of ice){
+    const c=ik.split(',').map(Number);o[ik]=new Set();
+    for(const dir of DIRS){const nk=(c[0]+dir[0])+','+(c[1]+dir[1])+','+(c[2]+dir[2]);
+      if(o[nk])o[nk].delete(dirKey(negDir(dir)));}
+  }
+  return o;
+}
+// True when the optimal route makes at least one real slide — a single action
+// that travels 2+ cells because it crossed ice (so ice isn't a floor-like step).
+function pathHasSlide(lvl,startCell,startOri){
+  const path=solvePathFor(lvl,startCell,startOri,0);
+  if(!path)return false;
+  for(let i=1;i<path.length;i++){const a=path[i-1].cell,b=path[i].cell;
+    if(Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])+Math.abs(a[2]-b[2])>=2)return true;}
+  return false;
+}
+// opts (optional): {mechanic:'oneway'|'ice'|'keys'} weaves a tile mechanic into
+// the generated maze. The goal is always re-picked as the farthest cell reachable
+// UNDER the active mechanic, so a returned level is guaranteed solvable. For ice
+// the goal is further constrained so the ice is unavoidable AND involves a slide.
+function buildLevel(N,seed,opts){
+  const mech=(opts&&opts.mechanic)||null;
   for(let attempt=0;attempt<200;attempt++){
     const rng=makeRng(seed+attempt*7919);
     const open=genMaze(N,rng);
@@ -714,14 +1300,44 @@ function buildLevel(N,seed){
       const x=(rng()*N)|0,y=(rng()*N)|0,z=(rng()*N)|0;pivots.add(x+','+y+','+z);
     }
     const startCell=[cx,cx,cx];const startOri=0;
-    const {cellBest}=solveBFS(open,N,pivots,startCell,startOri);
-    // pick goal = reachable cell with max play-distance
-    let best=null,bestD=-1;
-    for(const [cell,d] of cellBest){if(d>bestD){bestD=d;best=cell;}}
     const minWanted = N<=3?4:(N<=5?9:12);
+    let extra={};
+    if(mech){
+      const inj=injectMechanic(mech,open,N,pivots,startCell,startOri,rng);
+      if(!inj)continue;
+      extra=inj;
+    }
+    const {cellBest}=solveBFS(open,N,pivots,startCell,startOri,extra);
+    if(mech==='ice'){
+      // Only accept a goal the player CAN'T reach without crossing ice, and whose
+      // optimal route makes a real slide — otherwise the ice is just decoration.
+      const avoid=solveBFS(openAvoidingIce(open,N,extra.ice),N,pivots,startCell,startOri).cellBest;
+      const cands=[];
+      for(const [cell,d] of cellBest){
+        if(cell===startCell.join(','))continue;
+        if(extra.ice.has(cell))continue;   // can't stop on ice
+        if(avoid.has(cell))continue;       // reachable without ice → ice not required
+        if(d>=minWanted)cands.push([cell,d]);
+      }
+      cands.sort((a,b)=>b[1]-a[1]);        // prefer the farthest (hardest) goal
+      for(const [cell,d] of cands){
+        const goal=cell.split(',').map(Number);
+        if(pathHasSlide({N,open,pivots,startCell,startOri,goal,ice:extra.ice},startCell,startOri))
+          return {N,open,pivots,startCell,startOri,goal,seed:seed+attempt*7919,par:d,ice:extra.ice};
+      }
+      continue;                            // no ice-critical goal this maze → new seed
+    }
+    // pick goal = reachable cell with max play-distance (under the mechanic)
+    let best=null,bestD=-1;
+    for(const [cell,d] of cellBest){
+      if(cell===startCell.join(','))continue;
+      if(extra.keys&&extra.keys.some(k=>k.join(',')===cell))continue; // goal shouldn't sit on a key
+      if(d>bestD){bestD=d;best=cell;}
+    }
     if(best && bestD>=minWanted){
       const goal=best.split(',').map(Number);
-      return {N,open,pivots,startCell,startOri,goal,seed:seed+attempt*7919,par:bestD};
+      return {N,open,pivots,startCell,startOri,goal,seed:seed+attempt*7919,par:bestD,
+              ice:extra.ice,keys:extra.keys};
     }
   }
   // fallback (shouldn't happen): corner goal
@@ -731,9 +1347,156 @@ function buildLevel(N,seed){
 }
 
 /* =====================================================================
+   GHOST CHASE MODE
+   A pursuer that takes exactly ONE step for every WASD move the player
+   makes. It navigates the raw 3D passage graph (ignoring cube orientation,
+   like a ghost drifting through the structure), always heading along the
+   shortest route to the player's current cell. Because it moves one cell
+   per player move and spawns OFF the player's route to the goal, an
+   accurate player can always stay ahead and reach the goal.
+   ===================================================================== */
+function eqCell(a,b){return a[0]===b[0]&&a[1]===b[1]&&a[2]===b[2];}
+// Shortest-path distances over OPEN passages (6-connected) from `src`.
+function bfsCells(open,N,src){
+  const dist=new Map();dist.set(src.join(','),0);const q=[src.slice()];let h=0;
+  while(h<q.length){
+    const c=q[h++];const d=dist.get(c.join(','));
+    for(const dir of DIRS){
+      if(!isOpen(open,N,c,dir))continue;
+      const nc=[c[0]+dir[0],c[1]+dir[1],c[2]+dir[2]];
+      const k=nc.join(',');if(dist.has(k))continue;
+      dist.set(k,d+1);q.push(nc);
+    }
+  }
+  return dist;
+}
+// One step from `from` along the shortest route to `target`.
+function ghostNextCell(open,N,from,target){
+  if(eqCell(from,target))return from.slice();
+  const dist=bfsCells(open,N,target);
+  let best=null,bd=Infinity;
+  for(const dir of DIRS){
+    if(!isOpen(open,N,from,dir))continue;
+    const nc=[from[0]+dir[0],from[1]+dir[1],from[2]+dir[2]];
+    const d=dist.get(nc.join(','));
+    if(d==null)continue;
+    if(d<bd){bd=d;best=nc;}
+  }
+  return best||from.slice();
+}
+// Optimal player route for a specific level: BFS over (cell, orientation), same
+// as solvePath but pure (no globals) so we can evaluate candidate levels.
+// Path solver for an arbitrary level object. Handles ice slides and key
+// collection; `startMask` seeds already-collected keys (mid-run hints/solve).
+function solvePathFor(lvl,startCell,startOri,startMask){
+  const {open,N:Nn,pivots,goal}=lvl;
+  const ice=lvl.ice,keys=lvl.keys||[];
+  const full=(1<<keys.length)-1;
+  const bitOf=c=>{for(let i=0;i<keys.length;i++)if(keys[i][0]===c[0]&&keys[i][1]===c[1]&&keys[i][2]===c[2])return 1<<i;return 0;};
+  const m0=(startMask||0)|bitOf(startCell);
+  const key=(c,o,m)=>c.join(',')+'|'+o+'|'+m;
+  const prev=new Map();prev.set(key(startCell,startOri,m0),null);
+  const q=[{c:startCell,o:startOri,m:m0}];let head=0,end=null;
+  while(head<q.length){
+    const st=q[head++];const {c,o,m}=st;
+    if(m===full&&c[0]===goal[0]&&c[1]===goal[1]&&c[2]===goal[2]){end=st;break;}
+    const Rm=ORIENTS.list[o];
+    for(const hd of horizDirs(Rm)){
+      const nc=stepDest(open,Nn,ice,c,hd);
+      if(!nc)continue;
+      const nm=m|bitOf(nc);
+      const nk=key(nc,o,nm);if(prev.has(nk))continue;
+      prev.set(nk,st);q.push({c:nc,o,m:nm});
+    }
+    if(pivots.has(c.join(','))){
+      for(const G of ROT_OPS){
+        const no=orientIndex(matMul(G,Rm));const nk=key(c,no,m);
+        if(prev.has(nk))continue;prev.set(nk,st);q.splice(head,0,{c,o:no,m});
+      }
+    }
+  }
+  if(!end)return null;
+  const path=[];let s=end;
+  while(s){path.push({cell:s.c,ori:s.o});s=prev.get(key(s.c,s.o,s.m));}
+  return path.reverse();
+}
+// Simulate the chase along the player's optimal route (one ghost step per WASD
+// move; rotations don't advance the ghost). Returns true if the ghost NEVER
+// catches the player — i.e. this route is a guaranteed escape. `distOf(cell)`
+// gives cached BFS distances from `cell` over open passages.
+function ghostSafeOnPath(open,N,ghostStart,states,goal,distOf){
+  let g=ghostStart.slice(),prev=states[0].cell;
+  for(let i=1;i<states.length;i++){
+    const cell=states[i].cell;
+    if(eqCell(cell,prev))continue;          // rotation: ghost holds position
+    if(eqCell(cell,goal))return true;       // player reaches goal this move -> win
+    if(eqCell(cell,g))return false;         // player walked into the ghost
+    const gOld=g;
+    const dist=distOf(cell);
+    let best=g,bd=Infinity;
+    for(const dir of DIRS){
+      if(!isOpen(open,N,g,dir))continue;
+      const nc=[g[0]+dir[0],g[1]+dir[1],g[2]+dir[2]];
+      const d=dist.get(nc.join(','));
+      if(d==null)continue;
+      if(d<bd){bd=d;best=nc;}
+    }
+    g=best;
+    if(eqCell(g,cell))return false;                       // ghost stepped onto player
+    if(eqCell(g,prev)&&eqCell(gOld,cell))return false;    // player & ghost swapped cells
+    prev=cell;
+  }
+  return true;
+}
+// Build a ghost-chase level: a normal maze plus a ghost spawn that is reachable,
+// never between the player and goal, and PROVEN unable to catch an optimal
+// player. Retries fresh mazes until such a spawn exists. Among safe spawns we
+// pick the closest to the player, so the pursuit is a real threat.
+function buildGhostLevel(seed){
+  for(let a=0;a<80;a++){
+    const s=(seed+a*7919)>>>0;
+    const lvl=buildLevel(5,s);
+    const states=solvePathFor(lvl,lvl.startCell,lvl.startOri);
+    if(!states||states.length<2)continue;
+    const open=lvl.open,Nn=lvl.N;
+    const distP=bfsCells(open,Nn,lvl.startCell);
+    const distG=bfsCells(open,Nn,lvl.goal);
+    const D=distP.get(lvl.goal.join(','));
+    const skey=lvl.startCell.join(','),gkey=lvl.goal.join(',');
+    const cache=new Map();
+    const distOf=t=>{const k=t.join(',');let m=cache.get(k);if(!m){m=bfsCells(open,Nn,t);cache.set(k,m);}return m;};
+    const safe=[];
+    for(let x=0;x<Nn;x++)for(let y=0;y<Nn;y++)for(let z=0;z<Nn;z++){
+      const c=[x,y,z],k=c.join(',');
+      if(k===skey||k===gkey)continue;
+      const dp=distP.get(k),dg=distG.get(k);
+      if(dp==null)continue;
+      if(dp<2)continue;               // not sitting on top of the player
+      if(dp+dg===D)continue;          // between player and goal -> forbidden
+      if(ghostSafeOnPath(open,Nn,c,states,lvl.goal,distOf))safe.push({c,dp});
+    }
+    if(safe.length){
+      safe.sort((p,q)=>p.dp-q.dp);    // closest safe spawn = most threatening
+      const band=safe.filter(o=>o.dp<=safe[0].dp+2);  // pick among the very closest
+      return {level:lvl,ghost:band[(Math.random()*band.length)|0].c.slice()};
+    }
+  }
+  // Extremely rare (e.g. a near-corridor maze): keep the mode playable with the
+  // farthest off-route cell we can find, even if a perfect run isn't guaranteed.
+  const lvl=buildLevel(5,seed);
+  const distP=bfsCells(lvl.open,lvl.N,lvl.startCell);
+  let far=null,fd=-1;
+  for(const [k,d] of distP){
+    if(k===lvl.startCell.join(',')||k===lvl.goal.join(','))continue;
+    if(d>fd){fd=d;far=k;}
+  }
+  return {level:lvl,ghost:far?far.split(',').map(Number):lvl.startCell.slice()};
+}
+
+/* =====================================================================
    RENDERING (Three.js)
    ===================================================================== */
-let scene,camera,renderer,cubeGroup,trailGroup,raf;
+let scene,camera,renderer,cubeGroup,trailGroup,fxGroup,raf;
 let level,N,spacing=1.0;
 let R,p; // current orientation matrix, player cell
 let visited=new Set();   // physical cells "x,y,z" the player has occupied
@@ -742,6 +1505,17 @@ let moves=0,rots=0,won=false,lost=false,is2D=false;
 let menuMode=false,menuSize=5;
 let endlessMode=false,endlessCurrent=0;
 let bossMode=false,bossTimeLeft=0,bossDuration=0;
+let dailyMode=false,weeklyMode=false;
+let ghostMode=false,ghost=null,ghostObj=null,animGhost=null,ghostHit=false;
+let keysGot=new Set();          // collected key cells ("x,y,z") on keyed levels
+function currentKeyMask(){
+  const keys=(level&&level.keys)||[];let m=0;
+  for(let i=0;i<keys.length;i++)if(keysGot.has(keys[i].join(',')))m|=1<<i;
+  return m;
+}
+function allKeysGot(){return !level||!level.keys||keysGot.size>=level.keys.length;}
+let currentWorldId=1;   // drives ambient soundtrack (AMBIENT_THEMES) + backdrop (applyBackdrop) — set via setWorld()
+let goalObj=null,goalBeam=null,goalRing=null;
 let auto=false,autoStates=[],autoIdx=0;   // auto-solve playback state
 let moveLimit=0,currentSeed=0;            // budget = how many actions you may spend
 const LIMIT_FACTOR=1.8;                    // budget ≈ 1.8× the optimal solve
@@ -750,13 +1524,21 @@ let history=[],undosLeft=0;               // undo stack (snapshots before each a
 const MAX_UNDOS=3;
 const host=document.getElementById('scene');
 
-// camera orbit
+// camera orbit — orbit.az/el are the TARGET angles (set by input); camSm holds
+// the smoothed angles the camera actually uses, so dragging has soft inertia.
 let orbit={az:0.7,el:0.62,dist:0,drag:false,px:0,py:0};
+let camSm={az:0.7,el:0.62};
+let shake={amp:0};              // brief camera shake impulse (lose / big impacts)
 let animRot=null,animMove=null;
+let landFx=null;                // squash-and-stretch bounce on landing
+let fxParts=[];                 // short-lived dust/impact particles
+let hintFx=null;                // transient "next step" marker from the Hint button
+let hintsUsed=0;                // per-level hint count (for a clean-run star/achievement)
 
 const COL={
   floor:0x223066, floorEdge:0x4a5db5, wall:0x6f7fd6, wallTop:0x9fb0ff,
   ghost:0x1b2447, ghostEdge:0x2c3a72, player:0xffd45a, goal:0x5affa1, pivot:0xc77dff,
+  enemy:0xff4d6d,
 };
 
 function center(){return (N-1)/2;}
@@ -773,14 +1555,20 @@ function initThree(){
   camera=new THREE.PerspectiveCamera(48,w/h,0.1,200);
   renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  // Filmic tone mapping — soft highlight rolloff makes the emissive tiles and
+  // trail glow bloom gently instead of clipping to flat neon.
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.25;
   renderer.setSize(w,h);host.appendChild(renderer.domElement);
 
-  const amb=new THREE.AmbientLight(0x90a0ff,0.55);scene.add(amb);
-  const key=new THREE.DirectionalLight(0xffffff,0.9);key.position.set(6,12,8);scene.add(key);
-  const rim=new THREE.DirectionalLight(0x6a8cff,0.5);rim.position.set(-8,4,-6);scene.add(rim);
+  const amb=new THREE.AmbientLight(0x90a0ff,0.6);scene.add(amb);
+  const key=new THREE.DirectionalLight(0xffffff,1.0);key.position.set(6,12,8);scene.add(key);
+  const rim=new THREE.DirectionalLight(0x6a8cff,0.55);rim.position.set(-8,4,-6);scene.add(rim);
+  const bounce=new THREE.DirectionalLight(0x3a4a9a,0.3);bounce.position.set(0,-10,2);scene.add(bounce);
 
   cubeGroup=new THREE.Group();scene.add(cubeGroup);
   trailGroup=new THREE.Group();cubeGroup.add(trailGroup);
+  fxGroup=new THREE.Group();cubeGroup.add(fxGroup);   // dust & impact particles
 
   // orbit controls
   const el=renderer.domElement;
@@ -817,8 +1605,31 @@ function onResize(){
 
 // ---------- build mesh for current orientation ----------
 let dynamic=[]; // disposables
-function clearDynamic(){for(const o of dynamic){cubeGroup.remove(o);
-  if(o.geometry)o.geometry.dispose();if(o.material){o.material.dispose&&o.material.dispose();}}dynamic=[];}
+function clearDynamic(){
+  for(const o of dynamic){
+    cubeGroup.remove(o);
+    o.traverse&&o.traverse(n=>{
+      if(n.geometry)n.geometry.dispose();
+      if(n.material)n.material.dispose&&n.material.dispose();
+    });
+  }
+  dynamic=[];
+}
+
+// Little burst of drifting motes at `pos` (cube-frame coords). Used for step
+// landings and the cube-rotation thud. Self-disposing via the animate loop.
+function spawnDust(pos,col,count){
+  if(REDUCE)return;
+  for(let i=0;i<(count||5);i++){
+    const m=new THREE.Mesh(new THREE.SphereGeometry(0.018+Math.random()*0.014,6,5),
+      new THREE.MeshBasicMaterial({color:col||0xcfd6ff,transparent:true,opacity:.5,depthWrite:false}));
+    m.position.copy(pos);m.position.y+=0.05;
+    const a=Math.random()*Math.PI*2;
+    m.userData.v=new THREE.Vector3(Math.cos(a)*0.0015,0.0008+Math.random()*0.0007,Math.sin(a)*0.0015);
+    m.userData.life=0;m.userData.max=240+Math.random()*160;m.userData.op0=0.5;
+    fxGroup.add(m);fxParts.push(m);
+  }
+}
 
 function tileMesh(size,color,opacity,emissive){
   const g=new THREE.BoxGeometry(size,0.08,size);
@@ -833,8 +1644,10 @@ function edgeBox(size,h,color,opacity){
   return new THREE.LineSegments(e,m);
 }
 
+let keyGems=[];   // floating key gems (spun/bobbed by the loop)
 function buildScene(){
   clearDynamic();
+  goalObj=null;goalBeam=null;goalRing=null;keyGems=[];
   const up=upAxisOf(R);const upVal=p[up.axis];
   // outer cube wireframe
   const cubeSize=N*spacing;
@@ -849,26 +1662,86 @@ function buildScene(){
     const inLayer=(c[up.axis]===upVal);
     const wpos=cubeToWorld(R,c);
     if(inLayer){
-      const isPivot=level.pivots.has(x+','+y+','+z);
+      const ck=x+','+y+','+z;
+      const isPivot=level.pivots.has(ck);
       const isGoal=(x===level.goal[0]&&y===level.goal[1]&&z===level.goal[2]);
-      const col=isGoal?COL.goal:(isPivot?COL.pivot:COL.floor);
-      const t=tileMesh(tile,col,1,(isGoal||isPivot)?col:0);
+      const isIce=!!(level.ice&&level.ice.has(ck));
+      const locked=isGoal&&!allKeysGot();
+      const goalCol=locked?0x5a7189:COL.goal;   // locked goal reads grey-blue
+      const plainIce=isIce&&!isGoal&&!isPivot;
+      const col=isGoal?goalCol:(isPivot?COL.pivot:(plainIce?0x9fd8f0:COL.floor));
+      const emis=(isGoal||isPivot)?col:(plainIce?0x3fa8d8:0);
+      const t=tileMesh(tile,col,plainIce?0.92:1,emis);
+      if(plainIce){t.material.roughness=.15;t.material.metalness=.35;t.material.emissiveIntensity=.22;}
       t.position.copy(wpos);cubeGroup.add(t);dynamic.push(t);
+      if(isGoal){
+        goalObj=t;
+        // beacon: a soft additive light pillar + slowly spinning ground ring,
+        // so the goal reads from anywhere without hunting for a green square
+        const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.10,0.17,1.5,12,1,true),
+          new THREE.MeshBasicMaterial({color:goalCol,transparent:true,opacity:locked?0.07:0.13,
+            blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+        beam.position.copy(wpos);beam.position.y+=0.79;
+        beam.userData.baseOp=locked?0.07:0.13;
+        cubeGroup.add(beam);dynamic.push(beam);goalBeam=beam;
+        const ring=new THREE.Mesh(new THREE.TorusGeometry(0.34,0.016,8,32),
+          new THREE.MeshBasicMaterial({color:goalCol,transparent:true,opacity:locked?0.25:0.45,
+            blending:THREE.AdditiveBlending,depthWrite:false}));
+        ring.rotation.x=Math.PI/2;ring.position.copy(wpos);ring.position.y+=0.10;
+        cubeGroup.add(ring);dynamic.push(ring);goalRing=ring;
+      }
+      // uncollected key: a floating golden gem (spun + bobbed by the loop)
+      if(level.keys&&!keysGot.has(ck)&&level.keys.some(kc=>kc.join(',')===ck)){
+        const gem=new THREE.Mesh(new THREE.OctahedronGeometry(0.13,0),
+          new THREE.MeshStandardMaterial({color:0xffd21a,emissive:0xffb400,
+            emissiveIntensity:.7,roughness:.2,metalness:.6}));
+        gem.position.copy(wpos);gem.position.y+=0.38;
+        gem.userData.baseY=gem.position.y;gem.userData.ph=(x+z)*1.3;
+        cubeGroup.add(gem);dynamic.push(gem);keyGems.push(gem);
+      }
+      // Colourblind cue: a raised ring on pivots so they're distinguishable by
+      // SHAPE, not just the purple/yellow tint (the goal already has its beacon).
+      if(isPivot&&SETTINGS.colorblind){
+        const ring=new THREE.Mesh(new THREE.TorusGeometry(tile*0.27,tile*0.05,6,18),
+          new THREE.MeshStandardMaterial({color:0x14101e,emissive:0x14101e,emissiveIntensity:.2,roughness:.7}));
+        ring.rotation.x=Math.PI/2;ring.position.copy(wpos);ring.position.y+=0.07;
+        cubeGroup.add(ring);dynamic.push(ring);
+      }
       const eb=edgeBox(tile,0.08,isGoal?COL.goal:(isPivot?COL.pivot:COL.floorEdge),.9);
       eb.position.copy(wpos);cubeGroup.add(eb);dynamic.push(eb);
-      // walls: for each in-plane neighbor that's CLOSED or out of bounds, draw a wall
+      // walls: for each in-plane neighbor that's CLOSED or out of bounds, draw a
+      // wall — unless the passage is open FROM the neighbor (a one-way gate):
+      // then draw a low amber barrier + arrow showing the only legal direction.
       for(const hd of horizDirs(R)){
         const nc=[x+hd[0],y+hd[1],z+hd[2]];
         const oob=(nc[0]<0||nc[1]<0||nc[2]<0||nc[0]>=N||nc[1]>=N||nc[2]>=N);
         const blocked = oob || !isOpen(level.open,N,c,hd);
         if(!blocked)continue;
         const worldDir=matVec(R,hd); // world direction of this wall
+        const mid=wpos.clone().add(new THREE.Vector3(worldDir[0],worldDir[1],worldDir[2]).multiplyScalar(tile*0.5));
+        const oneWayIn=!oob&&isOpen(level.open,N,nc,negDir(hd));  // neighbor may enter here
+        if(oneWayIn){
+          const gate=new THREE.Mesh(new THREE.BoxGeometry(tile*0.9,0.10,0.05),
+            new THREE.MeshStandardMaterial({color:0xffb428,emissive:0xff9500,emissiveIntensity:.5,
+              transparent:true,opacity:.85,roughness:.4}));
+          const gmid=mid.clone();gmid.y+=0.06;gate.position.copy(gmid);
+          gate.lookAt(gmid.clone().add(new THREE.Vector3(worldDir[0],0,worldDir[2])));
+          cubeGroup.add(gate);dynamic.push(gate);
+          // arrow points INTO this cell (the only way you may cross)
+          const arr=new THREE.Mesh(new THREE.ConeGeometry(0.075,0.16,4),
+            new THREE.MeshStandardMaterial({color:0xffd21a,emissive:0xffb400,emissiveIntensity:.6,roughness:.3}));
+          const apos=mid.clone().addScaledVector(new THREE.Vector3(worldDir[0],0,worldDir[2]),-tile*0.16);
+          apos.y+=0.10;arr.position.copy(apos);
+          const dirIn=new THREE.Vector3(-worldDir[0],0,-worldDir[2]).normalize();
+          arr.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dirIn);
+          cubeGroup.add(arr);dynamic.push(arr);
+          continue;
+        }
         const wallMesh=new THREE.Mesh(
           new THREE.BoxGeometry(tile*1.02,0.42,0.07),
           new THREE.MeshStandardMaterial({color:COL.wall,emissive:COL.wall,emissiveIntensity:.12,roughness:.6}));
-        const mid=wpos.clone().add(new THREE.Vector3(worldDir[0],worldDir[1],worldDir[2]).multiplyScalar(tile*0.5));
-        mid.y+=0.21;wallMesh.position.copy(mid);
-        wallMesh.lookAt(mid.clone().add(new THREE.Vector3(worldDir[0],0,worldDir[2])));
+        const wmid=mid.clone();wmid.y+=0.21;wallMesh.position.copy(wmid);
+        wallMesh.lookAt(wmid.clone().add(new THREE.Vector3(worldDir[0],0,worldDir[2])));
         cubeGroup.add(wallMesh);dynamic.push(wallMesh);
       }
     } else {
@@ -880,13 +1753,50 @@ function buildScene(){
         const gm=tileMesh(tile*0.5,COL.goal,0.4,COL.goal);gm.position.copy(wpos);
         cubeGroup.add(gm);dynamic.push(gm);
       }
+      // faint marker for uncollected keys hiding in other layers
+      if(level.keys){
+        const ck2=x+','+y+','+z;
+        if(!keysGot.has(ck2)&&level.keys.some(kc=>kc.join(',')===ck2)){
+          const km=tileMesh(tile*0.4,0xffd21a,0.4,0xffb400);km.position.copy(wpos);
+          cubeGroup.add(km);dynamic.push(km);
+        }
+      }
     }
   }
   addPlayer();
+  if(ghostMode&&ghost)addGhost();
   rebuildTrail();
   updateHUD();
 }
 let playerObj=null;
+
+// The chasing ghost — a translucent red spectre. Lives in cube-frame like every
+// tile, so it rotates with the cube; its cell only changes on WASD moves.
+function addGhost(){
+  const g=new THREE.Group();
+  const col=COL.enemy;
+  const bodyMat=new THREE.MeshStandardMaterial({color:col,emissive:col,
+    emissiveIntensity:.6,transparent:true,opacity:.82,roughness:.4,metalness:.1});
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.14,16,12,0,Math.PI*2,0,Math.PI*0.62),bodyMat);
+  head.position.y=0.30;g.add(head);
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.14,0.20,16,1,true),bodyMat);
+  body.position.y=0.20;g.add(body);
+  const hem=6;
+  for(let i=0;i<hem;i++){
+    const a=(i/hem)*Math.PI*2;
+    const b=new THREE.Mesh(new THREE.SphereGeometry(0.045,8,8),bodyMat);
+    b.position.set(Math.cos(a)*0.115,0.10,Math.sin(a)*0.115);g.add(b);
+  }
+  const eyeMat=new THREE.MeshStandardMaterial({color:0x0a0a12,emissive:0x330008,
+    emissiveIntensity:.7,roughness:.2,metalness:.5});
+  [-1,1].forEach(s=>{
+    const e=new THREE.Mesh(new THREE.SphereGeometry(0.033,10,8),eyeMat);
+    e.position.set(s*0.05,0.30,0.115);g.add(e);
+  });
+  g.position.copy(cubeToWorld(R,ghost));
+  cubeGroup.add(g);dynamic.push(g);
+  ghostObj=g;
+}
 
 // Yellow "explored" path. Drawn in its own group so a single move can refresh
 // it without rebuilding the whole maze. Only cells in the currently-visible
@@ -900,49 +1810,406 @@ function rebuildTrail(){
   if(animRot)return;                 // spin draws its own faint version
   drawPath(false);
 }
-// Yellow route LINE: thin raised segments joining the squares the ball has
-// actually walked, with small joints. A bright line reads clearly as a path and
-// is visually distinct from the flat purple pivot tiles. Non-spin: only segments
-// whose endpoints are both in the visible layer. Spin: the whole 3D route, faint.
-function addSeg(wa,wb,opacity,thick){
-  const len=wa.distanceTo(wb);if(len<1e-4)return;
-  const m=new THREE.Mesh(new THREE.CylinderGeometry(thick,thick,len,8),
-    new THREE.MeshStandardMaterial({color:0xffe14d,emissive:0xffd000,
-      emissiveIntensity:.75,transparent:opacity<1,opacity,roughness:.3}));
-  m.position.copy(wa.clone().add(wb).multiplyScalar(0.5));
-  m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),wb.clone().sub(wa).normalize());
-  trailGroup.add(m);
+// The explored-route visual — a customizable "trail" of segments joining the
+// squares the ball has actually walked. Colour and style are picked from the
+// Trail menu (TRAIL_COLORS / TRAIL_STYLES below) and persisted. Non-spin: only
+// segments whose endpoints are both in the visible layer. Spin: the whole 3D
+// route, faint.
+function trailMat(tc,opacity,emI){
+  return new THREE.MeshStandardMaterial({color:tc.color,emissive:tc.glow,
+    emissiveIntensity:emI!=null?emI:.75,transparent:opacity<1,opacity,roughness:.3});
 }
 function drawPath(spin){
   const up=upAxisOf(R);const upVal=p[up.axis];
-  const op=spin?0.4:0.96, thick=0.055*spacing, lift=0.17;
+  const op=spin?0.4:0.96, lift=0.17;
   const wp=c=>{const w=cubeToWorld(R,c);w.y+=lift;return w;};
+  const segs=[],joints=[];
   for(let i=1;i<trail.length;i++){
     const a=trail[i-1],b=trail[i];
     if(a[0]===b[0]&&a[1]===b[1]&&a[2]===b[2])continue;
     if(!spin&&(a[up.axis]!==upVal||b[up.axis]!==upVal))continue;
-    addSeg(wp(a),wp(b),op,thick);
+    segs.push([wp(a),wp(b)]);
   }
-  for(const k of visited){                 // rounded joints / lone-cell markers
+  for(const k of visited){                 // lone-cell markers / route joints
     const c=k.split(',').map(Number);
     if(!spin&&c[up.axis]!==upVal)continue;
-    const s=new THREE.Mesh(new THREE.SphereGeometry(thick*1.6,12,10),
-      new THREE.MeshStandardMaterial({color:0xffe14d,emissive:0xffd000,
-        emissiveIntensity:.75,transparent:op<1,opacity:op,roughness:.3}));
-    s.position.copy(wp(c));trailGroup.add(s);
+    joints.push(wp(c));
   }
+  const tc=TRAIL_COLORS.find(c=>c.id===trailColor)||TRAIL_COLORS[0];
+  const style=TRAIL_STYLE_DEFS[trailStyle]||TRAIL_STYLE_DEFS.line;
+  style({segs,joints,op,tc});
 }
+const TRAIL_STYLE_DEFS={
+  // Classic — a solid glowing rope with rounded joints.
+  line({segs,joints,op,tc}){
+    const thick=0.055*spacing;
+    segs.forEach(([wa,wb])=>{
+      const len=wa.distanceTo(wb);if(len<1e-4)return;
+      const m=new THREE.Mesh(new THREE.CylinderGeometry(thick,thick,len,8),trailMat(tc,op));
+      m.position.copy(wa.clone().add(wb).multiplyScalar(0.5));
+      m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),wb.clone().sub(wa).normalize());
+      trailGroup.add(m);
+    });
+    joints.forEach(w=>{
+      const s=new THREE.Mesh(new THREE.SphereGeometry(thick*1.6,12,10),trailMat(tc,op));
+      s.position.copy(w);trailGroup.add(s);
+    });
+  },
+  // Dashed — short broken segments, sparse joint dots.
+  dashed({segs,joints,op,tc}){
+    const thick=0.042*spacing,dashLen=0.10*spacing,gapLen=0.075*spacing,unit=dashLen+gapLen;
+    segs.forEach(([wa,wb])=>{
+      const full=wb.clone().sub(wa);const len=full.length();if(len<1e-4)return;
+      const dir=full.multiplyScalar(1/len);
+      const n=Math.max(1,Math.ceil(len/unit));
+      for(let i=0;i<n;i++){
+        const t0=i*unit,t1=Math.min(len,t0+dashLen);if(t1<=t0)continue;
+        const a=wa.clone().addScaledVector(dir,t0),b=wa.clone().addScaledVector(dir,t1);
+        const m=new THREE.Mesh(new THREE.CylinderGeometry(thick,thick,b.distanceTo(a),6),trailMat(tc,op));
+        m.position.copy(a.clone().add(b).multiplyScalar(0.5));
+        m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir);
+        trailGroup.add(m);
+      }
+    });
+    joints.forEach(w=>{
+      const s=new THREE.Mesh(new THREE.SphereGeometry(thick*1.3,10,8),trailMat(tc,op,.6));
+      s.position.copy(w);trailGroup.add(s);
+    });
+  },
+  // Beads — dotted, no connecting line; small spheres strung along each step.
+  beads({segs,joints,op,tc}){
+    const r=0.036*spacing,step=0.11*spacing;
+    segs.forEach(([wa,wb])=>{
+      const full=wb.clone().sub(wa);const len=full.length();if(len<1e-4)return;
+      const dir=full.multiplyScalar(1/len);
+      const n=Math.max(1,Math.round(len/step));
+      for(let i=1;i<n;i++){
+        const pos=wa.clone().addScaledVector(dir,len*i/n);
+        const s=new THREE.Mesh(new THREE.SphereGeometry(r,10,8),trailMat(tc,op*0.85));
+        s.position.copy(pos);trailGroup.add(s);
+      }
+    });
+    joints.forEach(w=>{
+      const s=new THREE.Mesh(new THREE.SphereGeometry(r*1.7,12,10),trailMat(tc,op));
+      s.position.copy(w);trailGroup.add(s);
+    });
+  },
+  // Diamond — thin line with faceted octahedron joints.
+  diamond({segs,joints,op,tc}){
+    const thick=0.03*spacing;
+    segs.forEach(([wa,wb])=>{
+      const len=wa.distanceTo(wb);if(len<1e-4)return;
+      const m=new THREE.Mesh(new THREE.CylinderGeometry(thick,thick,len,6),trailMat(tc,op*0.8,.55));
+      m.position.copy(wa.clone().add(wb).multiplyScalar(0.5));
+      m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),wb.clone().sub(wa).normalize());
+      trailGroup.add(m);
+    });
+    joints.forEach(w=>{
+      const s=new THREE.Mesh(new THREE.OctahedronGeometry(thick*2.6,0),trailMat(tc,op,.9));
+      s.rotation.y=Math.PI/4;s.position.copy(w);trailGroup.add(s);
+    });
+  },
+  // Footprints — alternating flattened prints along the direction of travel,
+  // no continuous line at all.
+  footprints({segs,joints,op,tc}){
+    const w=0.05*spacing,d=0.075*spacing,stepLen=0.16*spacing;
+    let side=1;
+    segs.forEach(([wa,wb])=>{
+      const full=wb.clone().sub(wa);const len=full.length();if(len<1e-4)return;
+      const dir=full.clone().multiplyScalar(1/len);
+      const perp=new THREE.Vector3(-dir.z,0,dir.x);
+      const n=Math.max(1,Math.round(len/stepLen));
+      for(let i=0;i<n;i++){
+        const t=len*(i+0.5)/n;
+        const pos=wa.clone().addScaledVector(dir,t).addScaledVector(perp,side*0.045*spacing);
+        const print=new THREE.Mesh(new THREE.BoxGeometry(w,0.008,d),trailMat(tc,op*0.88,.5));
+        print.position.copy(pos);
+        print.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),dir);
+        trailGroup.add(print);
+        side*=-1;
+      }
+    });
+    joints.forEach((w,i)=>{
+      if(i>0)return;                        // just mark the very start
+      const s=new THREE.Mesh(new THREE.SphereGeometry(0.03*spacing,10,8),trailMat(tc,op,.6));
+      s.position.copy(w);trailGroup.add(s);
+    });
+  },
+};
+let playerFacingY=0; // world-space yaw, set on move so the character turns to face travel direction
 function addPlayer(){
-  const pg=new THREE.Group();
-  const ball=new THREE.Mesh(new THREE.SphereGeometry(0.26,24,18),
-    new THREE.MeshStandardMaterial({color:COL.player,emissive:COL.player,emissiveIntensity:.5,roughness:.3}));
-  ball.position.y=0.28;pg.add(ball);
-  const ring=new THREE.Mesh(new THREE.TorusGeometry(0.34,0.03,8,28),
-    new THREE.MeshStandardMaterial({color:COL.player,emissive:COL.player,emissiveIntensity:.6}));
-  ring.rotation.x=Math.PI/2;ring.position.y=0.06;pg.add(ring);
+  const def=CHARACTERS.find(c=>c.id===charSkin)||CHARACTERS[0];
+  // The default chameleon follows the world/theme palette; the animals carry
+  // their own signature colours.
+  const cc = def.themed ? {color:COL.player,accent:COL.player} : {color:def.color,accent:def.accent};
+  const pg=def.build(cc);
+  // soft square contact shadow (on-theme with the voxel look) so the critter
+  // sits INTO the tile instead of floating
+  const shadow=new THREE.Mesh(new THREE.PlaneGeometry(0.27,0.27),
+    new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.24,depthWrite:false}));
+  shadow.rotation.x=-Math.PI/2;shadow.position.y=0.047;pg.add(shadow);
+  pg.rotation.y=playerFacingY;
   pg.position.copy(cubeToWorld(R,p));
   cubeGroup.add(pg);dynamic.push(pg);
   playerObj=pg;
+}
+
+/* =====================================================================
+   PLAYABLE CHARACTERS — each is a little low-poly critter built from
+   primitives. A builder takes {color, accent} and returns a THREE.Group,
+   registering `userData.idleParts` (nodes the render loop gently animates).
+   Everything faces +Z (travel direction); scale fits inside one tile.
+   ===================================================================== */
+function aMat(color,o){o=o||{};
+  return new THREE.MeshStandardMaterial({color,
+    emissive:o.emissive!=null?o.emissive:color,
+    emissiveIntensity:o.emI!=null?o.emI:.24,
+    roughness:o.rough!=null?o.rough:.58,metalness:o.metal!=null?o.metal:.05,
+    flatShading:!!o.flat});}
+// Voxel building block — the animals are Minecraft-style: axis-aligned boxes only.
+function vox(w,h,d,color,o){return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),aMat(color,o));}
+// Two-pixel Minecraft eye: white outer pixel + (optionally glowing) iris pixel.
+// Dark pixel sits at -x; mirror with scale.x=-1 so irises face inward like MC mobs.
+function voxEye(px,iris){
+  const g=new THREE.Group();
+  const w=vox(px,px,0.016,0xffffff,{emissive:0xffffff,emI:.18});w.position.x=px/2;g.add(w);
+  const d=vox(px,px,0.018,0x14101e,{emissive:iris||0x14101e,emI:iris?.55:.12});d.position.x=-px/2;g.add(d);
+  return g;
+}
+function legsAt(pg,color,coords,r0,r1,h,y){
+  coords.forEach(([x,z])=>{
+    const leg=new THREE.Mesh(new THREE.CylinderGeometry(r0,r1,h,6),aMat(color,{emI:.18}));
+    leg.position.set(x,y,z);pg.add(leg);
+  });
+}
+
+// 🦎 Chameleon — the original mech-lizard (themed).
+function buildChameleon(cc){
+  const pg=new THREE.Group();
+  const mat=(emI,rough,met)=>aMat(cc.color,{emI,rough:rough!=null?rough:.35,metal:met!=null?met:.4});
+  const body=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.15,0.32),mat(.35));body.position.y=0.22;pg.add(body);
+  const head=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.13,0.15),mat(.4));head.position.set(0,0.32,0.15);pg.add(head);
+  const visor=new THREE.Mesh(new THREE.BoxGeometry(0.13,0.028,0.02),
+    new THREE.MeshStandardMaterial({color:0xffffff,emissive:cc.accent,emissiveIntensity:1.5}));
+  visor.position.set(0,0.32,0.225);pg.add(visor);
+  const idle=[];
+  [-1,1].forEach((side,i)=>{
+    const pivot=new THREE.Group();pivot.position.set(side*0.06,0.34,0.10);pivot.rotation.set(-0.25,0,side*-0.45);
+    const stalk=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.024,0.10,6),mat(.3));stalk.position.y=0.05;pivot.add(stalk);
+    const eye=new THREE.Mesh(new THREE.SphereGeometry(0.042,10,8),
+      new THREE.MeshStandardMaterial({color:0x0a0a12,emissive:cc.accent,emissiveIntensity:.9,roughness:.15,metalness:.6}));
+    eye.position.y=0.11;pivot.add(eye);pg.add(pivot);
+    idle.push({node:pivot,axis:'y',base:0,amp:0.16,freq:0.0012,phase:i*1.7});
+  });
+  const tail=new THREE.Mesh(new THREE.TorusGeometry(0.13,0.022,6,16,Math.PI*1.35),mat(.28));
+  tail.position.set(0,0.20,-0.19);tail.rotation.set(Math.PI/2,0,Math.PI*0.15);pg.add(tail);
+  idle.push({node:tail,axis:'y',base:0,amp:0.12,freq:0.0018,phase:0});
+  legsAt(pg,cc.color,[[0.09,0.11],[-0.09,0.11],[0.09,-0.11],[-0.09,-0.11]],0.016,0.026,0.12,0.10);
+  pg.userData.idleParts=idle;
+  return pg;
+}
+
+// 🐱 Cat — voxel kitty: cubic head, block ears with pink inner face, tabby
+// brow stripes, cream chest plate and a blocky swishing tail.
+function buildCat(cc){
+  const pg=new THREE.Group();
+  const fur=cc.color,dark=0x515766,cream=0xf2ead9,pink=0xff9bb5;
+  const body=vox(0.16,0.13,0.23,fur);body.position.set(0,0.165,-0.03);pg.add(body);
+  const chest=vox(0.12,0.09,0.02,cream,{emI:.16});chest.position.set(0,0.15,0.088);pg.add(chest);
+  [[0.055,0.05],[-0.055,0.05],[0.055,-0.10],[-0.055,-0.10]].forEach(([x,z])=>{
+    const leg=vox(0.05,0.10,0.05,fur);leg.position.set(x,0.09,z);pg.add(leg);
+  });
+  // head group — the idle tilt moves the whole face at once
+  const hg=new THREE.Group();hg.position.set(0,0.32,0.07);pg.add(hg);
+  const head=vox(0.20,0.17,0.17,fur);hg.add(head);
+  [-1,1].forEach(s=>{
+    const ear=vox(0.05,0.06,0.03,fur);ear.position.set(s*0.07,0.11,-0.03);hg.add(ear);
+    const inner=vox(0.03,0.035,0.008,pink,{emI:.35});inner.position.set(s*0.07,0.10,-0.012);hg.add(inner);
+  });
+  [-1,0,1].forEach(i=>{             // tabby stripes across the crown
+    const st=vox(0.028,0.012,0.10,dark,{emI:.08});st.position.set(i*0.05,0.092,-0.02);hg.add(st);
+  });
+  [-1,1].forEach(s=>{
+    const e=voxEye(0.03,0x4fd583);e.position.set(s*0.055,0.02,0.088);if(s<0)e.scale.x=-1;hg.add(e);
+  });
+  const mz=vox(0.08,0.05,0.03,cream,{emI:.16});mz.position.set(0,-0.045,0.093);hg.add(mz);
+  const nose=vox(0.026,0.02,0.012,pink,{emI:.5});nose.position.set(0,-0.028,0.108);hg.add(nose);
+  // tail — angled block with dark tip, sways
+  const tail=new THREE.Group();tail.position.set(0,0.20,-0.14);
+  const t1=vox(0.045,0.045,0.16,fur);t1.rotation.x=-0.9;t1.position.set(0,0.045,-0.05);tail.add(t1);
+  const tip=vox(0.05,0.05,0.05,dark,{emI:.12});tip.position.set(0,0.10,-0.10);tail.add(tip);
+  pg.add(tail);
+  pg.userData.idleParts=[
+    {node:tail,axis:'z',base:0,amp:0.25,freq:0.002,phase:0},
+    {node:hg,axis:'z',base:0,amp:0.04,freq:0.0012,phase:0.6},
+  ];
+  return pg;
+}
+
+// 🦊 Fox — voxel fox (à la Minecraft's): white lower-face slab, box snout,
+// dark-tipped block ears, dark socks and a big plume tail with cream tip.
+function buildFox(cc){
+  const pg=new THREE.Group();
+  const fur=cc.color,cream=0xfff2df,dark=0x33241b;
+  const body=vox(0.15,0.12,0.26,fur);body.position.set(0,0.16,-0.04);pg.add(body);
+  const chest=vox(0.11,0.08,0.02,cream,{emI:.15});chest.position.set(0,0.15,0.095);pg.add(chest);
+  [[0.05,0.04],[-0.05,0.04],[0.05,-0.12],[-0.05,-0.12]].forEach(([x,z])=>{
+    const leg=vox(0.045,0.10,0.045,dark,{emI:.1});leg.position.set(x,0.09,z);pg.add(leg);
+  });
+  const hg=new THREE.Group();hg.position.set(0,0.315,0.08);pg.add(hg);
+  const head=vox(0.21,0.15,0.16,fur);hg.add(head);
+  const jaw=vox(0.21,0.05,0.16,cream,{emI:.15});jaw.position.set(0,-0.095,0);hg.add(jaw);
+  const sn=vox(0.07,0.05,0.07,cream,{emI:.15});sn.position.set(0,-0.045,0.11);hg.add(sn);
+  const nose=vox(0.028,0.024,0.016,dark,{emI:.12});nose.position.set(0,-0.038,0.148);hg.add(nose);
+  [-1,1].forEach(s=>{
+    const ear=vox(0.055,0.07,0.03,fur);ear.position.set(s*0.072,0.105,-0.02);hg.add(ear);
+    const tip=vox(0.055,0.022,0.03,dark,{emI:.08});tip.position.set(s*0.072,0.15,-0.02);hg.add(tip);
+  });
+  [-1,1].forEach(s=>{
+    const e=voxEye(0.028,0xffb347);e.position.set(s*0.058,0.012,0.082);if(s<0)e.scale.x=-1;hg.add(e);
+  });
+  // plume tail with cream tip
+  const tail=new THREE.Group();tail.position.set(0,0.19,-0.16);
+  const t1=vox(0.07,0.07,0.18,fur);t1.rotation.x=-0.8;t1.position.set(0,0.05,-0.05);tail.add(t1);
+  const tip2=vox(0.075,0.075,0.06,cream,{emI:.18});tip2.position.set(0,0.115,-0.115);tail.add(tip2);
+  pg.add(tail);
+  pg.userData.idleParts=[
+    {node:tail,axis:'y',base:0,amp:0.3,freq:0.0019,phase:0},
+    {node:hg,axis:'z',base:0,amp:0.045,freq:0.0012,phase:0.9},
+  ];
+  return pg;
+}
+
+// 🐸 Frog — voxel frog (à la Minecraft's): wide flat body, cube eye-pods on
+// top, mouth seam, spot tiles on the back and a bobbing throat block.
+function buildFrog(cc){
+  const pg=new THREE.Group();
+  const skin=cc.color,belly=0xe7f6c3,spotC=0x3fa53a,dk=0x2c4a20;
+  const body=vox(0.24,0.13,0.22,skin);body.position.set(0,0.115,-0.01);pg.add(body);
+  const bel=vox(0.20,0.09,0.02,belly,{emI:.16});bel.position.set(0,0.10,0.10);pg.add(bel);
+  const head=vox(0.22,0.09,0.12,skin);head.position.set(0,0.225,0.03);pg.add(head);
+  const mouth=vox(0.16,0.012,0.012,dk,{emI:.1});mouth.position.set(0,0.185,0.092);pg.add(mouth);
+  const pods=[];
+  [-1,1].forEach(s=>{
+    const pod=new THREE.Group();pod.position.set(s*0.075,0.295,0.035);
+    pod.add(vox(0.07,0.07,0.07,skin));
+    const e=voxEye(0.026,0xffe14d);e.position.set(0,0.004,0.038);if(s<0)e.scale.x=-1;pod.add(e);
+    pg.add(pod);pods.push(pod);
+  });
+  [[-0.07,-0.06],[0.05,-0.09],[0.08,0.02]].forEach(([x,z])=>{   // back spot tiles
+    const sp=vox(0.05,0.012,0.05,spotC,{emI:.12});sp.position.set(x,0.185,z);pg.add(sp);
+  });
+  const throat=vox(0.10,0.05,0.03,belly,{emI:.2});throat.position.set(0,0.155,0.115);pg.add(throat);
+  [-1,1].forEach(s=>{
+    const foot=vox(0.07,0.03,0.09,skin);foot.position.set(s*0.085,0.055,0.13);pg.add(foot);
+    const thigh=vox(0.06,0.09,0.11,skin);thigh.position.set(s*0.145,0.095,-0.05);pg.add(thigh);
+    const bfoot=vox(0.065,0.03,0.10,skin);bfoot.position.set(s*0.15,0.055,0.03);pg.add(bfoot);
+  });
+  pg.userData.idleParts=[
+    {node:pods[0],axis:'x',base:0,amp:0.12,freq:0.0016,phase:0},
+    {node:pods[1],axis:'x',base:0,amp:0.12,freq:0.0016,phase:1.2},
+    {node:throat,axis:'y',kind:'pos',base:0.155,amp:0.007,freq:0.006,phase:0},
+  ];
+  return pg;
+}
+
+// 🐰 Rabbit — voxel bunny: tall block ears with pink inner strip (one flopped
+// back), buck teeth, big flat back feet and a cube puff tail.
+function buildRabbit(cc){
+  const pg=new THREE.Group();
+  const fur=cc.color,pink=0xffb0c8,grey=0xd8dae6;
+  const body=vox(0.15,0.13,0.20,fur,{emI:.15});body.position.set(0,0.155,-0.02);pg.add(body);
+  [[0.05,0.06],[-0.05,0.06]].forEach(([x,z])=>{
+    const leg=vox(0.045,0.09,0.045,fur,{emI:.15});leg.position.set(x,0.085,z);pg.add(leg);
+  });
+  [-1,1].forEach(s=>{               // big flat back feet
+    const foot=vox(0.055,0.04,0.13,grey,{emI:.15});foot.position.set(s*0.06,0.06,-0.06);pg.add(foot);
+  });
+  const hg=new THREE.Group();hg.position.set(0,0.315,0.05);pg.add(hg);
+  const head=vox(0.17,0.15,0.15,fur,{emI:.15});hg.add(head);
+  const ears=[];
+  [-1,1].forEach(s=>{
+    const ear=new THREE.Group();ear.position.set(s*0.05,0.075,-0.02);
+    const outer=vox(0.05,0.17,0.03,fur,{emI:.15});outer.position.y=0.085;ear.add(outer);
+    const inner=vox(0.026,0.13,0.008,pink,{emI:.35});inner.position.set(0,0.09,0.013);ear.add(inner);
+    hg.add(ear);ears.push(ear);
+  });
+  ears[1].rotation.x=-0.25;          // one ear lazily flopped back
+  [-1,1].forEach(s=>{
+    const e=voxEye(0.028,0x8b6cff);e.position.set(s*0.05,0.018,0.078);if(s<0)e.scale.x=-1;hg.add(e);
+  });
+  const nose=vox(0.024,0.02,0.012,pink,{emI:.5});nose.position.set(0,-0.02,0.08);hg.add(nose);
+  const teeth=vox(0.03,0.028,0.012,0xffffff,{emI:.25});teeth.position.set(0,-0.052,0.078);hg.add(teeth);
+  const puff=vox(0.06,0.06,0.05,0xffffff,{emI:.25});puff.position.set(0,0.16,-0.13);pg.add(puff);
+  pg.userData.idleParts=[
+    {node:ears[0],axis:'z',base:0,amp:0.12,freq:0.0018,phase:0},
+    {node:ears[1],axis:'z',base:0,amp:0.12,freq:0.0018,phase:1.4},
+    {node:hg,axis:'z',base:0,amp:0.04,freq:0.0011,phase:0.5},
+  ];
+  return pg;
+}
+
+// 🐧 Penguin — voxel penguin: boxy tuxedo body with white belly + face
+// panels, block beak, flat flapping flippers, orange block feet.
+function buildPenguin(cc){
+  const pg=new THREE.Group();
+  const coat=cc.color,white=0xf7f9ff,orange=cc.accent;
+  const body=vox(0.19,0.24,0.17,coat,{emI:.14});body.position.set(0,0.20,0);pg.add(body);
+  const belly=vox(0.15,0.18,0.02,white,{emI:.15});belly.position.set(0,0.18,0.082);pg.add(belly);
+  const head=vox(0.16,0.13,0.15,coat,{emI:.14});head.position.set(0,0.385,0.01);pg.add(head);
+  const face=vox(0.12,0.09,0.015,white,{emI:.15});face.position.set(0,0.385,0.083);pg.add(face);
+  [-1,1].forEach(s=>{
+    const e=voxEye(0.026);e.position.set(s*0.04,0.395,0.095);if(s<0)e.scale.x=-1;pg.add(e);
+  });
+  const beak=vox(0.05,0.03,0.06,orange,{emI:.4});beak.position.set(0,0.365,0.11);pg.add(beak);
+  const flips=[];
+  [-1,1].forEach(s=>{
+    const flip=new THREE.Group();flip.position.set(s*0.105,0.295,0);flip.rotation.z=s*0.18;
+    const blade=vox(0.03,0.15,0.08,coat,{emI:.14});blade.position.y=-0.07;flip.add(blade);
+    pg.add(flip);flips.push({flip,s});
+  });
+  [-1,1].forEach(s=>{
+    const foot=vox(0.06,0.03,0.10,orange,{emI:.35});foot.position.set(s*0.05,0.055,0.05);pg.add(foot);
+  });
+  const tail=vox(0.08,0.03,0.06,coat,{emI:.14});tail.position.set(0,0.10,-0.10);pg.add(tail);
+  pg.userData.idleParts=[
+    {node:flips[0].flip,axis:'z',base:-0.18,amp:0.2,freq:0.0028,phase:0},
+    {node:flips[1].flip,axis:'z',base:0.18,amp:0.2,freq:0.0028,phase:Math.PI},
+  ];
+  return pg;
+}
+
+// 🐻 Bear — voxel bear: chunky block body, cube ears with tan inner face,
+// box muzzle with button nose, tan belly panel, stubby block legs.
+function buildBear(cc){
+  const pg=new THREE.Group();
+  const fur=cc.color,tan=0xd9b184,dark=0x241812;
+  const body=vox(0.19,0.15,0.24,fur,{emI:.13});body.position.set(0,0.175,-0.02);pg.add(body);
+  const bel=vox(0.13,0.10,0.02,tan,{emI:.15});bel.position.set(0,0.16,0.10);pg.add(bel);
+  [[0.06,0.05],[-0.06,0.05],[0.06,-0.10],[-0.06,-0.10]].forEach(([x,z])=>{
+    const leg=vox(0.06,0.10,0.06,fur,{emI:.13});leg.position.set(x,0.09,z);pg.add(leg);
+  });
+  const hg=new THREE.Group();hg.position.set(0,0.345,0.06);pg.add(hg);
+  const head=vox(0.20,0.16,0.16,fur,{emI:.13});hg.add(head);
+  const ears=[];
+  [-1,1].forEach(s=>{
+    const ear=new THREE.Group();ear.position.set(s*0.07,0.10,-0.02);
+    ear.add(vox(0.05,0.05,0.03,fur,{emI:.13}));
+    const inner=vox(0.028,0.028,0.008,tan,{emI:.3});inner.position.z=0.016;ear.add(inner);
+    hg.add(ear);ears.push(ear);
+  });
+  const mz=vox(0.08,0.06,0.04,tan,{emI:.16});mz.position.set(0,-0.04,0.09);hg.add(mz);
+  const nose=vox(0.032,0.022,0.014,dark,{emI:.12});nose.position.set(0,-0.025,0.112);hg.add(nose);
+  [-1,1].forEach(s=>{
+    const e=voxEye(0.026);e.position.set(s*0.052,0.02,0.082);if(s<0)e.scale.x=-1;hg.add(e);
+  });
+  const stub=vox(0.05,0.05,0.04,tan,{emI:.2});stub.position.set(0,0.17,-0.15);pg.add(stub);
+  pg.userData.idleParts=[
+    {node:ears[0],axis:'x',base:0,amp:0.1,freq:0.0015,phase:0},
+    {node:ears[1],axis:'x',base:0,amp:0.1,freq:0.0015,phase:1.1},
+    {node:hg,axis:'z',base:0,amp:0.035,freq:0.001,phase:0},
+  ];
+  return pg;
 }
 
 // Uniform translucent cube used ONLY during a rotation, so the bright
@@ -951,16 +2218,19 @@ function addPlayer(){
 // solid object turning; the sliced maze view is rebuilt once it settles.
 function buildSpinScene(){
   clearDynamic();
+  goalBeam=null;goalRing=null;keyGems=[];   // beacon/gems live only in the sliced view
   const cubeSize=N*spacing;
   const wf=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(cubeSize,cubeSize,cubeSize)),
      new THREE.LineBasicMaterial({color:0x4a5db5,transparent:true,opacity:.5}));
   cubeGroup.add(wf);dynamic.push(wf);
   const tile=0.9*spacing;
   for(let x=0;x<N;x++)for(let y=0;y<N;y++)for(let z=0;z<N;z++){
-    const isPivot=level.pivots.has(x+','+y+','+z);
+    const sk=x+','+y+','+z;
+    const isPivot=level.pivots.has(sk);
     const isGoal=(x===level.goal[0]&&y===level.goal[1]&&z===level.goal[2]);
-    const col=isGoal?COL.goal:(isPivot?COL.pivot:COL.floor);
-    const op=isGoal?0.95:(isPivot?0.8:0.42);
+    const isIce=!!(level.ice&&level.ice.has(sk));
+    const col=isGoal?COL.goal:(isPivot?COL.pivot:(isIce?0x9fd8f0:COL.floor));
+    const op=isGoal?0.95:(isPivot?0.8:(isIce?0.6:0.42));
     const t=tileMesh(tile*0.94,col,op,(isGoal||isPivot)?col:0);
     t.position.copy(cubeToWorld(R,[x,y,z]));cubeGroup.add(t);dynamic.push(t);
   }
@@ -969,6 +2239,7 @@ function buildSpinScene(){
   clearTrail();
   drawPath(true);
   addPlayer();
+  if(ghostMode&&ghost)addGhost();
 }
 
 // ---------- camera ----------
@@ -982,10 +2253,15 @@ function setupOrtho(){
 function updateCamera(){
   if(is2D){camera.position.set(0,14,0.001);camera.up.set(0,0,-1);camera.lookAt(0,0,0);return;}
   const d=N*spacing*1.7+3;
-  camera.position.set(
-    d*Math.cos(orbit.el)*Math.sin(orbit.az),
-    d*Math.sin(orbit.el),
-    d*Math.cos(orbit.el)*Math.cos(orbit.az));
+  let px=d*Math.cos(camSm.el)*Math.sin(camSm.az),
+      py=d*Math.sin(camSm.el),
+      pz=d*Math.cos(camSm.el)*Math.cos(camSm.az);
+  if(shake.amp>0.001){
+    px+=(Math.random()-0.5)*shake.amp;
+    py+=(Math.random()-0.5)*shake.amp;
+    pz+=(Math.random()-0.5)*shake.amp;
+  }
+  camera.position.set(px,py,pz);
   camera.up.set(0,1,0);camera.lookAt(0,0,0);
 }
 
@@ -1014,6 +2290,35 @@ function animate(){
     }
     if(bossTimeLeft<=0)lose();
   }
+  // goal proximity glow — pulse scale when player is close
+  if(!won&&!lost&&goalObj&&level){
+    const gd=Math.abs(p[0]-level.goal[0])+Math.abs(p[1]-level.goal[1])+Math.abs(p[2]-level.goal[2]);
+    goalObj.scale.setScalar(gd<=5&&gd>0?1+0.12*Math.sin(now*0.005):1);
+  }
+  // key gems — slow spin + gentle bob
+  for(const g of keyGems){
+    g.rotation.y=now*0.0022;
+    if(!REDUCE)g.position.y=g.userData.baseY+0.045*Math.sin(now*0.003+g.userData.ph);
+  }
+  // goal beacon — breathing light pillar + slowly spinning ground ring
+  if(goalBeam){
+    const b=goalBeam.userData.baseOp!=null?goalBeam.userData.baseOp:0.13;
+    goalBeam.material.opacity=REDUCE?b:b-0.03+0.05*Math.sin(now*0.0035);
+  }
+  if(goalRing&&!REDUCE){
+    goalRing.rotation.z=now*0.0012;
+    const rs=1+0.06*Math.sin(now*0.004);goalRing.scale.set(rs,rs,1);
+  }
+  // idle character animation — each animal registers "idleParts" (ears wiggle,
+  // tails sway, flippers flap, heads tilt) driven by a shared sine wave.
+  // kind:'pos' translates instead of rotates (e.g. the frog's croaking throat).
+  if(playerObj&&playerObj.userData.idleParts){
+    for(const pt of playerObj.userData.idleParts){
+      const v=pt.base+pt.amp*Math.sin(now*pt.freq+pt.phase);
+      if(pt.kind==='pos')pt.node.position[pt.axis]=v;
+      else pt.node.rotation[pt.axis]=v;
+    }
+  }
   // rotation animation: slerp cubeGroup quaternion identity->target, time-based
   if(animRot){
     animRot.el+=dt;
@@ -1026,20 +2331,91 @@ function animate(){
       buildScene();
       checkRotHint();checkBudget();updateUndoBtn();
       sfx('rotate');
+      if(!REDUCE){                  // tiny thud as the cube settles
+        shake.amp=0.09;
+        if(playerObj)spawnDust(playerObj.position.clone(),0x9fb0ff,8);
+      }
     }
   }
-  // move animation
+  // move animation — glide with a hop arc + squash-and-stretch, then a landing
+  // bounce and a dust puff. Small touches, but they make every step feel alive.
   if(animMove&&playerObj){
     animMove.el+=dt;
-    const t=Math.min(1,animMove.el/MOVE_DUR);
+    const t=Math.min(1,animMove.el/(animMove.dur||MOVE_DUR));
     const e=smoother(t);
     playerObj.position.lerpVectors(animMove.from,animMove.to,e);
-    if(t>=1){animMove=null;afterMove();}
+    if(!REDUCE&&!animMove.slide){  // slides stay flat — it's ice, not a hop
+      const arc=Math.sin(Math.PI*e);
+      playerObj.position.y+=0.13*arc;
+      playerObj.scale.set(1-0.10*arc,1+0.16*arc,1-0.10*arc);
+    }
+    if(t>=1){
+      const slid=animMove.slide;
+      animMove=null;
+      if(!REDUCE){                  // land squashed, then spring back + dust puff
+        playerObj.scale.set(1.10,0.82,1.10);landFx={el:0};
+        spawnDust(playerObj.position.clone(),slid?0xbfe8ff:null,slid?7:5);
+      }
+      afterMove();
+    }
+  }
+  // …then spring back with a slight overshoot
+  if(landFx&&playerObj){
+    landFx.el+=dt;
+    const t=Math.min(1,landFx.el/170);
+    const sy=1-0.18*Math.cos(t*Math.PI*1.5)*(1-t);
+    playerObj.scale.set(1+(1-sy)*0.55,sy,1+(1-sy)*0.55);
+    if(t>=1){playerObj.scale.set(1,1,1);landFx=null;}
+  }
+  // smooth yaw — the character banks into its new heading instead of snapping
+  if(playerObj&&!animRot){
+    const dy=Math.atan2(Math.sin(playerFacingY-playerObj.rotation.y),Math.cos(playerFacingY-playerObj.rotation.y));
+    playerObj.rotation.y+=dy*(1-Math.exp(-dt/55));
+  }
+  // ghost glide — runs concurrently with the player's move
+  if(animGhost&&ghostObj){
+    animGhost.el+=dt;
+    const t=Math.min(1,animGhost.el/MOVE_DUR);
+    ghostObj.position.lerpVectors(animGhost.from,animGhost.to,smoother(t));
+    ghostObj.position.y+=0.05*Math.sin(Math.PI*t)+0.02*Math.sin(now*0.004); // spectral bob
+    if(t>=1)animGhost=null;
+  }
+  if(ghostObj&&ghostObj.userData.yaw!=null){
+    const gy=Math.atan2(Math.sin(ghostObj.userData.yaw-ghostObj.rotation.y),Math.cos(ghostObj.userData.yaw-ghostObj.rotation.y));
+    ghostObj.rotation.y+=gy*(1-Math.exp(-dt/80));
+  }
+  // dust / impact particles — drift, expand, fade, then dispose
+  for(let i=fxParts.length-1;i>=0;i--){
+    const m=fxParts[i];m.userData.life+=dt;
+    const t=m.userData.life/m.userData.max;
+    if(t>=1){fxGroup.remove(m);m.geometry.dispose();m.material.dispose();fxParts.splice(i,1);continue;}
+    m.position.addScaledVector(m.userData.v,dt);
+    m.material.opacity=m.userData.op0*(1-t);
+    const s=1+t*1.7;m.scale.set(s,s,s);
+  }
+  // hint marker — pulse + bob, fade out after ~1.6s
+  if(hintFx){
+    hintFx.el+=dt;
+    const t=hintFx.el/1600;
+    if(t>=1)clearHintFx();
+    else{
+      const op=0.92*(1-t);
+      hintFx.node.children.forEach(c=>c.material.opacity=op);
+      if(!REDUCE){
+        hintFx.node.scale.setScalar(1+0.12*Math.sin(hintFx.el*0.012));
+        hintFx.node.children[1].position.y=0.42+0.05*Math.sin(hintFx.el*0.01);
+      }
+    }
   }
   // drive auto-solve: take the next step whenever nothing is animating
   if(auto&&!animRot&&!animMove&&!won)advanceAuto();
   // slow auto-orbit on the main menu
   if(menuMode&&!is2D)orbit.az+=0.003;
+  // camera inertia + shake decay
+  const ck=1-Math.exp(-dt/90);
+  camSm.az+=(orbit.az-camSm.az)*ck;
+  camSm.el+=(orbit.el-camSm.el)*ck;
+  if(shake.amp>0.001)shake.amp*=Math.exp(-dt/130);else shake.amp=0;
   updateCamera();
   renderer.render(scene,camera);
 }
@@ -1057,10 +2433,13 @@ function startLevel(size,seed,preset){
   moveLimit=Math.max(level.par+5, Math.round(level.par*LIMIT_FACTOR));
   visited=new Set([p.join(',')]);trail=[p.slice()];
   moves=0;rots=0;won=false;lost=false;animRot=null;animMove=null;
+  landFx=null;shake.amp=0;hintsUsed=0;clearHintFx&&clearHintFx();
+  keysGot=new Set();
+  if(level.keys)level.keys.forEach(k=>{if(eqCell(k,p))keysGot.add(k.join(','));});
   history=[];undosLeft=MAX_UNDOS;
   auto=false;autoStates=[];autoIdx=0;setSolveLabel(false);
   cubeGroup.quaternion.identity();
-  document.getElementById('toast').classList.remove('lose','tutorial');
+  document.getElementById('toast').classList.remove('lose','tutorial','ghostmode','freeplay');
   document.querySelectorAll('[data-size]').forEach(b=>b.classList.toggle('active',+b.dataset.size===size));
   buildScene();checkRotHint();hideToast();
   if(!menuMode){stopAmbient();if(audioCtx&&!audioMuted)(bossMode?startBossAmbient():startAmbient());}
@@ -1069,37 +2448,75 @@ function startLevel(size,seed,preset){
 function tryMove(worldDir){
   if(won||lost||auto||animRot||animMove)return;
   const Rt=matT(R);const hd=matVec(Rt,worldDir).map(Math.round);
-  const nc=[p[0]+hd[0],p[1]+hd[1],p[2]+hd[2]];
-  if(nc[0]<0||nc[1]<0||nc[2]<0||nc[0]>=N||nc[1]>=N||nc[2]>=N)return;
-  if(!isOpen(level.open,N,p,hd))return; // wall
+  const nc=stepDest(level.open,N,level.ice,p,hd);   // includes any ice slide
+  if(!nc)return; // wall / out of bounds
   applyMove(nc);
 }
-function snapState(){return{p:p.slice(),R:R.map(r=>r.slice()),moves,rots,trail:trail.map(c=>c.slice()),visited:new Set(visited)};}
+function snapState(){return{p:p.slice(),R:R.map(r=>r.slice()),moves,rots,trail:trail.map(c=>c.slice()),visited:new Set(visited),ghost:ghost?ghost.slice():null,keysGot:new Set(keysGot)};}
 function applyMove(nc){           // commit a (known-valid) step + start its glide
+  clearHintFx();
   history.push(snapState());
   const from=playerObj.position.clone();
+  const cells=Math.abs(nc[0]-p[0])+Math.abs(nc[1]-p[1])+Math.abs(nc[2]-p[2]);
   p=nc;moves++;
-  animMove={el:0,from,to:cubeToWorld(R,p)};
-  if(navigator.vibrate)navigator.vibrate(8);
+  const to=cubeToWorld(R,p);
+  // ice slides cover several cells in one action — longer, flatter glide
+  animMove={el:0,from,to,slide:cells>1,dur:cells>1?MOVE_DUR*Math.min(2.4,0.7+0.45*cells):MOVE_DUR};
+  const dx=to.x-from.x, dz=to.z-from.z;
+  if(Math.abs(dx)>0.001||Math.abs(dz)>0.001){
+    playerFacingY=Math.atan2(dx,dz);   // animate loop eases the yaw toward this
+  }
+  if(ghostMode&&!auto)stepGhost();  // ghost takes one step per WASD move
+  if(SETTINGS.haptics&&navigator.vibrate)navigator.vibrate(8);
+}
+// Advance the ghost one cell toward the player's NEW position. Flags a catch if
+// the player stepped onto the ghost, or the ghost stepped onto the player.
+function stepGhost(){
+  const ghostOld=ghost.slice();
+  ghost=ghostNextCell(level.open,N,ghost,p);
+  ghostHit=eqCell(p,ghostOld)||eqCell(ghost,p);
+  if(ghostObj){
+    const from=ghostObj.position.clone();
+    const to=cubeToWorld(R,ghost);
+    animGhost={el:0,from,to};
+    const dx=to.x-from.x, dz=to.z-from.z;
+    if(Math.abs(dx)>0.001||Math.abs(dz)>0.001)ghostObj.userData.yaw=Math.atan2(dx,dz);
+  }
 }
 function afterMove(){
   playerObj.position.copy(cubeToWorld(R,p));
   visited.add(p.join(','));   // mark visited only now that the ball has arrived
   trail.push(p.slice());      // ordered route, for drawing the yellow line
   rebuildTrail();
+  // key pickup — keys are grabbed at the cell you STOP on (matches the solver)
+  if(level.keys){
+    const k=p.join(',');
+    if(!keysGot.has(k)&&level.keys.some(c=>c.join(',')===k)){
+      keysGot.add(k);
+      sfx('key');
+      if(!REDUCE&&playerObj)spawnDust(playerObj.position.clone(),0xffd21a,9);
+      buildScene();             // gem disappears; goal unlocks visually when last one
+    }
+  }
   updateHUD();checkRotHint();updateUndoBtn();
   sfx('move');
-  if(p[0]===level.goal[0]&&p[1]===level.goal[1]&&p[2]===level.goal[2]){win();return;}
+  if(p[0]===level.goal[0]&&p[1]===level.goal[1]&&p[2]===level.goal[2]){
+    if(allKeysGot()){win();return;}
+    // standing on a locked goal — nudge, don't win
+    const hb=document.getElementById('hBudget');if(hb){hb.classList.remove('pop');void hb.offsetWidth;hb.classList.add('pop');}
+  }
+  if(ghostMode&&!auto&&ghostHit){ghostCatch();return;}
   checkBudget();
 }
 function actionsUsed(){return moves;}
 function checkBudget(){
-  if(won||lost||auto||bossMode)return; // boss uses time limit, not move budget
+  if(won||lost||auto||bossMode||ghostMode)return; // boss uses time; ghost mode uses the chase, not a move budget
   if(actionsUsed()>=moveLimit)lose();
 }
 function lose(){
-  lost=true;sfx('lose');stopAmbient();
+  lost=true;sfx('lose');stopAmbient();if(!REDUCE)shake.amp=0.4;
   document.getElementById('bossOverlay').classList.remove('active');
+  document.getElementById('toastShare').style.display='none';
   document.getElementById('toast').classList.add('lose');
   if(endlessMode&&bossMode){
     document.getElementById('toastTitle').textContent="Time's Up!";
@@ -1115,6 +2532,17 @@ function lose(){
     document.getElementById('toastTitle').textContent="Time's Up!";
     document.getElementById('toastBody').textContent=
       `Boss Level ${currentLevelId} — you ran out of time. Give it another shot!`;
+    document.getElementById('toastBtn').textContent='← Menu';
+  } else if(weeklyMode){
+    document.getElementById('toastTitle').textContent='Out of moves';
+    document.getElementById('toastBody').textContent=
+      `Used all ${moveLimit} moves on this week's cube. The optimal is ${level.par}. Try again!`;
+    document.getElementById('toastBtn').textContent='← Menu';
+  } else if(dailyMode){
+    document.getElementById('toastTitle').textContent='Out of moves';
+    document.getElementById('toastBody').textContent=
+      `Used all ${moveLimit} moves on today's Daily. The optimal is ${level.par}. Try again!`;
+    document.getElementById('toastBtn').textContent='← Menu';
   } else {
     document.getElementById('toastTitle').textContent='Out of moves';
     document.getElementById('toastBody').textContent=
@@ -1125,13 +2553,31 @@ function lose(){
   showToast();
 }
 
+function ghostCatch(){
+  lost=true;auto=false;sfx('lose');stopAmbient();if(!REDUCE)shake.amp=0.5;
+  document.getElementById('bossOverlay').classList.remove('active');
+  document.getElementById('toastShare').style.display='none';
+  const t=document.getElementById('toast');
+  t.classList.remove('tutorial','levelmode','endlessmode','dailymode');
+  t.classList.add('lose','ghostmode');
+  document.getElementById('toastTitle').textContent='Caught!';
+  document.getElementById('toastBody').textContent=
+    `The ghost caught you after ${moves} move${moves===1?'':'s'}. Keep moving toward the green tile to stay ahead!`;
+  document.getElementById('toastRetry').textContent='↻ Retry';
+  document.getElementById('toastBtn').textContent='← Menu';
+  showToast();
+}
+
 function undo(){
   if(animRot||animMove||!history.length||undosLeft<=0)return;
   if(won){won=false;hideToast();}
   if(lost){lost=false;hideToast();}
   const s=history.pop();
   p=s.p;R=s.R;moves=s.moves;rots=s.rots;trail=s.trail;visited=s.visited;
+  ghost=s.ghost?s.ghost.slice():null;animGhost=null;ghostHit=false;
+  keysGot=s.keysGot?new Set(s.keysGot):new Set();
   undosLeft--;
+  landFx=null;playerObj.scale.set(1,1,1);
   playerObj.position.copy(cubeToWorld(R,p));
   cubeGroup.quaternion.identity();
   buildScene();rebuildTrail();updateHUD();checkRotHint();
@@ -1151,6 +2597,7 @@ function tryRotate(G){
   applyRotation(G);
 }
 function applyRotation(G){
+  clearHintFx();
   history.push(snapState());
   const newR=matMul(G,R);
   // Swap to the uniform spin-cube (baked at current R) so no single layer is
@@ -1171,13 +2618,22 @@ function quatFromMat(M){
 }
 
 function win(){
-  won=true;auto=false;setSolveLabel(false);sfx('win');stopAmbient();
+  won=true;auto=false;setSolveLabel(false);sfx('win');stopAmbient();spawnParticles();
   const wasBoss=bossMode;
   const timeSpared=Math.ceil(bossTimeLeft);
   document.getElementById('bossOverlay').classList.remove('active');
-  document.getElementById('toast').classList.remove('lose','tutorial','levelmode','endlessmode');
+  document.getElementById('toastShare').style.display='none';
+  document.getElementById('toastBtn').textContent='✦ New Cube';
+  document.getElementById('toast').classList.remove('lose','tutorial','levelmode','endlessmode','dailymode','ghostmode','freeplay');
   const used=actionsUsed();
-  if(tutorialMode){
+  if(ghostMode){
+    document.getElementById('toast').classList.add('ghostmode');
+    document.getElementById('toastTitle').textContent='Escaped! 👻';
+    document.getElementById('toastBody').textContent=
+      `You reached the goal in ${moves} move${moves===1?'':'s'} — the ghost never caught you!`;
+    document.getElementById('toastRetry').textContent='↻ New Chase';
+    document.getElementById('toastBtn').textContent='← Menu';
+  } else if(tutorialMode){
     const isLast=tutLevelIdx>=TUT_LEVELS.length-1;
     document.getElementById('toast').classList.add('tutorial');
     document.getElementById('toastTitle').textContent=isLast?'Tutorial complete!':'Nice!';
@@ -1199,6 +2655,44 @@ function win(){
       document.getElementById('toastBody').textContent=`${used} action${used===1?'':'s'}${tag}`;
     }
     document.getElementById('toastNext').textContent=`Level ${endlessCurrent+1} →`;
+    checkAchievements({used,wasBoss,timeSpared,bossDur:bossDuration});
+    checkSkinUnlocks();
+  } else if(weeklyMode){
+    const k=weekKey();const wd=getWeeklyData();
+    const stars=calcStars(used,level.par);
+    const prevBest=wd.best[k];
+    const newBest=!prevBest||used<prevBest;
+    if(newBest)wd.best[k]=used;
+    if(!wd.done[k]||stars>wd.done[k])wd.done[k]=stars;
+    saveWeeklyData(wd);
+    document.getElementById('toast').classList.add('dailymode'); // same layout: share + menu
+    document.getElementById('toastTitle').textContent=newBest&&prevBest?'New weekly best!':'Weekly Complete!';
+    document.getElementById('toastBody').textContent=
+      `${used} move${used===1?'':'s'} · par ${level.par} · best ${wd.best[k]}`;
+    document.getElementById('toastShare').style.display='inline-block';
+    document.getElementById('toastBtn').textContent='← Menu';
+    refreshWeeklyBtn();
+    checkAchievements({used,stars});
+    checkSkinUnlocks();
+  } else if(dailyMode){
+    const key=todayKey();const data=getDailyData();
+    const stars=calcStars(used,level.par);
+    if(!data.done[key]){
+      const yd=new Date();yd.setDate(yd.getDate()-1);
+      const yKey=`${yd.getFullYear()}${String(yd.getMonth()+1).padStart(2,'0')}${String(yd.getDate()).padStart(2,'0')}`;
+      data.streak=(data.lastDate===yKey?data.streak:0)+1;
+      data.lastDate=key;data.done[key]=stars;saveDailyData(data);
+    }
+    const fd=getDailyData();
+    document.getElementById('toast').classList.add('dailymode');
+    document.getElementById('toastTitle').textContent='Daily Complete!';
+    document.getElementById('toastBody').textContent=
+      `${used} move${used===1?'':'s'} · par ${level.par} · Streak: ${fd.streak} day${fd.streak===1?'':'s'}`;
+    document.getElementById('toastShare').style.display='inline-block';
+    document.getElementById('toastBtn').textContent='← Menu';
+    refreshDailyBtn();
+    checkAchievements({used,stars,isDaily:true,dailyStreak:fd.streak});
+    checkSkinUnlocks();
   } else if(levelMode){
     const stars=calcStars(used,level.par);
     saveLevelProgress(currentLevelId,stars);
@@ -1215,11 +2709,26 @@ function win(){
       document.getElementById('toastBody').textContent=`${used} move${used===1?'':'s'} · ${rots} rotation${rots===1?'':'s'}${tag}`;
     }
     document.getElementById('toastNext').textContent=currentLevelId<LEVELS.length?'Next Level ▸':'All done! ▸';
+    checkAchievements({used,stars,wasBoss,timeSpared,bossDur:bossDuration});
+    checkSkinUnlocks();
   } else {
-    document.getElementById('toastTitle').textContent='Solved!';
-    const tag=used<=level.par?' — optimal!':` (best possible: ${level.par})`;
+    const stars=calcStars(used,level.par);
+    document.getElementById('toast').classList.add('freeplay');
+    document.getElementById('toastStars').innerHTML=
+      '<span class="star-on">★</span>'.repeat(stars)+'<span class="star-off">★</span>'.repeat(3-stars);
+    document.getElementById('toastTitle').textContent=stars===3?'Perfect!':'Solved!';
+    const tag=used<=level.par?' — optimal!':` · best possible ${level.par}`;
     document.getElementById('toastBody').textContent=
-      `${moves} move${moves===1?'':'s'} · ${rots} rotation${rots===1?'':'s'}${tag}`;
+      `${moves} move${moves===1?'':'s'} · ${rots} rotation${rots===1?'':'s'}${tag}`+
+      (hintsUsed?` · ${hintsUsed} hint${hintsUsed===1?'':'s'}`:'');
+  }
+  // Coin reward (all real modes; tutorial is practice). Appended to the toast.
+  if(!tutorialMode&&level){
+    const st=level.par?calcStars(used,level.par):1;
+    const streak=dailyMode?(getDailyData().streak||0):0;
+    const gained=awardCoins({used,par:level.par,stars:st,streak});
+    const body=document.getElementById('toastBody');
+    body.innerHTML+=` <span style="color:var(--accent2);font-weight:700">+${gained}&nbsp;🪙</span>`;
   }
   showToast();
 }
@@ -1229,31 +2738,8 @@ function win(){
    state to the goal, then replay the exact moves + rotations.
    ===================================================================== */
 function solvePath(startCell,startOri){
-  const key=(c,o)=>c.join(',')+'|'+o;
-  const prev=new Map();prev.set(key(startCell,startOri),null);
-  const q=[{c:startCell,o:startOri}];let head=0,end=null;
-  while(head<q.length){
-    const {c,o}=q[head++];
-    if(c[0]===level.goal[0]&&c[1]===level.goal[1]&&c[2]===level.goal[2]){end={c,o};break;}
-    const Rm=ORIENTS.list[o];
-    for(const hd of horizDirs(Rm)){
-      const nc=[c[0]+hd[0],c[1]+hd[1],c[2]+hd[2]];
-      if(nc[0]<0||nc[1]<0||nc[2]<0||nc[0]>=N||nc[1]>=N||nc[2]>=N)continue;
-      if(!isOpen(level.open,N,c,hd))continue;
-      const nk=key(nc,o);if(prev.has(nk))continue;
-      prev.set(nk,{c,o});q.push({c:nc,o});
-    }
-    if(level.pivots.has(c.join(','))){
-      for(const G of ROT_OPS){
-        const no=orientIndex(matMul(G,Rm));const nk=key(c,no);
-        if(prev.has(nk))continue;prev.set(nk,{c,o});q.splice(head,0,{c,o:no});
-      }
-    }
-  }
-  if(!end)return null;
-  const path=[];let s=end;
-  while(s){path.push({cell:s.c,ori:s.o});s=prev.get(key(s.c,s.o));}
-  return path.reverse();   // [start ... goal]
+  // level-aware solver, seeded with whatever keys the player already holds
+  return solvePathFor(level,startCell,startOri,currentKeyMask());
 }
 function setSolveLabel(active){
   document.getElementById('solve').textContent=active?'Stop solving':'Auto-solve';
@@ -1275,14 +2761,74 @@ function advanceAuto(){               // called from the loop when idle
   else{applyRotation(matMul(ORIENTS.list[nxt.ori],matT(ORIENTS.list[cur.ori])));}
 }
 
+/* ── Hint — reuse the solver to reveal just the NEXT optimal step ──────── */
+function clearHintFx(){
+  if(!hintFx)return;
+  cubeGroup.remove(hintFx.node);
+  hintFx.node.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material&&n.material.dispose)n.material.dispose();});
+  hintFx=null;
+}
+function showHint(){
+  if(won||lost||auto||animRot||animMove||!level)return;
+  const path=solvePath(p.slice(),orientIndex(R));
+  if(!path||path.length<2)return;   // already at the goal
+  hintsUsed++;
+  const nxt=path[1];
+  const isMove=!eqCell(path[0].cell,nxt.cell);
+  if(isMove){
+    // glowing ring + downward arrow hovering over the tile to step onto
+    clearHintFx();
+    const g=new THREE.Group();
+    const mat=()=>new THREE.MeshBasicMaterial({color:0xffe14d,transparent:true,opacity:.92,
+      blending:THREE.AdditiveBlending,depthWrite:false});
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(0.30,0.028,8,28),mat());
+    ring.rotation.x=Math.PI/2;g.add(ring);
+    const arrow=new THREE.Mesh(new THREE.ConeGeometry(0.085,0.16,4),mat());
+    arrow.position.y=0.42;arrow.rotation.x=Math.PI;g.add(arrow);
+    const w=cubeToWorld(R,nxt.cell);g.position.copy(w);g.position.y+=0.12;
+    cubeGroup.add(g);hintFx={node:g,el:0};
+    sfx('undo');
+  } else {
+    // a rotation is optimal here — flash the pivot rotation hint + pad
+    const rh=document.getElementById('rotHint'),rp=document.getElementById('rotPad');
+    rh.classList.add('show','hintflash');rp.classList.add('show');
+    setTimeout(()=>rh.classList.remove('hintflash'),1200);
+    sfx('undo');
+  }
+}
+
 // ---------- HUD ----------
+// Set a HUD value with a little scale "pop" when it actually changes.
+function bumpHud(el,txt){
+  if(el.textContent===txt)return;
+  el.textContent=txt;
+  el.classList.remove('pop');void el.offsetWidth;   // restart the animation
+  el.classList.add('pop');
+}
 function updateHUD(){
   const up=upAxisOf(R);
-  document.getElementById('hLayer').textContent=`${p[up.axis]+1} / ${N}`;
+  bumpHud(document.getElementById('hLayer'),`${p[up.axis]+1} / ${N}`);
+  // keys progress (only on keyed levels)
+  const kr=document.getElementById('hKeysRow');
+  if(kr){
+    if(level&&level.keys){
+      kr.style.display='';
+      const hk=document.getElementById('hKeys');
+      bumpHud(hk,`${keysGot.size} / ${level.keys.length} 🗝`);
+      hk.style.color=allKeysGot()?'#33d17a':'#f5a623';
+    }else kr.style.display='none';
+  }
+  if(ghostMode){
+    const hb=document.getElementById('hBudget');
+    const d=ghost?bfsCells(level.open,N,p).get(ghost.join(',')):null;
+    bumpHud(hb,(d==null?'—':d+(d===1?' tile':' tiles')));
+    hb.style.color=(d!=null&&d<=1)?'#f56262':(d!=null&&d<=3?'#f5a623':'');
+    return;
+  }
   if(bossMode)return; // animate loop drives the countdown display
   const left=moveLimit-actionsUsed();
   const hb=document.getElementById('hBudget');
-  hb.textContent=Math.max(0,left)+' / '+moveLimit;
+  bumpHud(hb,Math.max(0,left)+' / '+moveLimit);
   hb.style.color = left<=3 ? '#f56262' : (left<=Math.ceil(moveLimit*0.25) ? '#f5a623' : '');
 }
 function checkRotHint(){
@@ -1323,24 +2869,160 @@ function endlessLevelConfig(n){
   const seed=(n*48271+12345)%999983;
   return{size,seed};
 }
+/* ── Coins & unlocks ──────────────────────────────────────────────────
+   Coins are earned by winning (more for stars / beating par) and spent to
+   unlock cosmetic characters & trails. Free defaults stay free.            */
+function getCoins(){return parseInt(storageGet('cubeMazeCoins')||'0',10);}
+function addCoins(n){const v=Math.max(0,getCoins()+n);storageSet('cubeMazeCoins',String(v));refreshCoins();return v;}
+function refreshCoins(){
+  document.querySelectorAll('.coin-count').forEach(el=>el.textContent=getCoins());
+}
+// award scaled by stars + a beat-par / streak bonus; returns coins granted.
+// Deliberately lean — cosmetics are a long-haul grind (see the costs below).
+function awardCoins({used,par,stars,streak}){
+  let c=3+ (stars||1)*3;
+  if(par!=null&&used!=null&&used<=par)c+=5;       // optimal solve bonus
+  if(streak)c+=Math.min(8,streak);                // daily streak bonus
+  addCoins(c);
+  return c;
+}
+function getOwned(){return new Set((storageGet('cubeMazeOwned')||'').split(',').filter(Boolean));}
+function isOwned(id){return id==null||FREE_COSMETICS.has(id)||getOwned().has(id);}
+function buyCosmetic(id,cost){
+  if(isOwned(id))return true;
+  if(getCoins()<cost)return false;
+  addCoins(-cost);
+  const o=getOwned();o.add(id);storageSet('cubeMazeOwned',[...o].join(','));
+  return true;
+}
 function getEndlessBest(){return parseInt(storageGet('cubeMazeEndless')||'0',10);}
-function saveEndlessBest(n){const b=getEndlessBest();if(n>b)storageSet('cubeMazeEndless',String(n));}
+function saveEndlessBest(n){
+  const b=getEndlessBest();
+  if(n>b){storageSet('cubeMazeEndless',String(n));checkAchievementsEndless(n);checkSkinUnlocks();}
+}
 function refreshEndlessBtn(){
   const best=getEndlessBest();
   const badge=document.getElementById('endlessBadge');
-  if(badge)badge.textContent=best>0?`Continue · Level ${best+1}`:'';
+  if(badge)badge.textContent=best>0?`Lv ${best+1}`:'';
 }
+
+/* ── Win particles ────────────────────────────────────────────────── */
+function spawnParticles(){
+  const c=document.getElementById('particles');if(!c)return;
+  c.innerHTML='';
+  const cols=['var(--accent)','#5affa1','#ffffff','#ffd45a','#ff8aff'];
+  for(let i=0;i<36;i++){
+    const el=document.createElement('div');el.className='particle';
+    const a=Math.random()*Math.PI*2;const d=90+Math.random()*260;
+    const sz=(4+Math.random()*8).toFixed(1)+'px';
+    const dur=(0.6+Math.random()*0.5).toFixed(2)+'s';
+    const delay=(Math.random()*0.18).toFixed(2)+'s';
+    const col=cols[(Math.random()*cols.length)|0];
+    el.style.cssText=`--dx:${Math.round(Math.cos(a)*d)}px;--dy:${Math.round(Math.sin(a)*d)}px;--sz:${sz};--col:${col};--dur:${dur};--delay:${delay}`;
+    c.appendChild(el);
+    setTimeout(()=>{if(el.parentNode===c)c.removeChild(el);},(parseFloat(dur)+parseFloat(delay))*1000+250);
+  }
+}
+
+/* ── Daily Challenge ──────────────────────────────────────────────── */
+function todayKey(){
+  const d=new Date();
+  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+}
+function daySeed(){return parseInt(todayKey(),10);}
+function getDailyData(){
+  try{const s=storageGet('cubeMazeDaily');if(s)return JSON.parse(s);}catch(_){}
+  return{lastDate:'',streak:0,done:{}};
+}
+function saveDailyData(data){storageSet('cubeMazeDaily',JSON.stringify(data));}
+function refreshDailyBtn(){
+  const key=todayKey();const data=getDailyData();
+  const done=!!data.done[key];const streak=data.streak||0;
+  const badge=document.getElementById('menuDailyBadge');
+  if(badge)badge.textContent=done?'✓ done':(streak>0?`${streak}d streak`:'');
+}
+function startDaily(){
+  dailyMode=true;weeklyMode=false;levelMode=false;endlessMode=false;bossMode=false;ghostMode=false;menuMode=false;
+  hideLevelSelect();
+  document.getElementById('mainMenu').classList.add('out');
+  showGameUI();
+  applyTheme(1);applySkin(activeSkin);setWorld(1);
+  document.getElementById('bossOverlay').classList.remove('active');
+  document.getElementById('hudTitle').textContent='Daily Challenge';
+  const lbl=document.getElementById('hBudgetLabel');if(lbl)lbl.textContent='Budget left';
+  const hb=document.getElementById('hBudget');if(hb)hb.style.color='';
+  startLevel(5,daySeed());
+  moveLimit=level.par+4;   // tight budget — daily rewards a near-optimal solve, not exploration
+  updateHUD();
+}
+
+/* ── Weekly Challenge — one big 7³ cube per ISO week, chase your best ── */
+function weekKey(){
+  const d=new Date();
+  // ISO week number (Thursday trick)
+  const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  const day=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-day);
+  const y=t.getUTCFullYear();
+  const wk=Math.ceil((((t-Date.UTC(y,0,1))/86400000)+1)/7);
+  return `${y}-W${String(wk).padStart(2,'0')}`;
+}
+function weekSeed(){const k=weekKey();let h=0;for(let i=0;i<k.length;i++)h=(h*31+k.charCodeAt(i))>>>0;return h%999999937;}
+function getWeeklyData(){
+  try{const s=storageGet('cubeMazeWeekly');if(s)return JSON.parse(s);}catch(_){}
+  return{done:{},best:{}};
+}
+function saveWeeklyData(d){storageSet('cubeMazeWeekly',JSON.stringify(d));}
+function refreshWeeklyBtn(){
+  const k=weekKey();const d=getWeeklyData();
+  const badge=document.getElementById('menuWeeklyBadge');
+  if(badge)badge.textContent=d.best[k]?`best ${d.best[k]}`:'';
+}
+function startWeekly(){
+  weeklyMode=true;dailyMode=false;levelMode=false;endlessMode=false;bossMode=false;ghostMode=false;menuMode=false;
+  hideLevelSelect();
+  document.getElementById('mainMenu').classList.add('out');
+  showGameUI();
+  applyTheme(3);applySkin(activeSkin);setWorld(3);   // the Vault look — weekly feels special
+  document.getElementById('bossOverlay').classList.remove('active');
+  document.getElementById('hudTitle').textContent=`Weekly · ${weekKey()}`;
+  const lbl=document.getElementById('hBudgetLabel');if(lbl)lbl.textContent='Budget left';
+  const hb=document.getElementById('hBudget');if(hb)hb.style.color='';
+  startLevel(7,weekSeed());
+  moveLimit=level.par+6;   // roomier than daily — it's a bigger cube
+  updateHUD();
+}
+// One share path for daily + weekly results.
+function shareChallenge(){
+  const used=actionsUsed();
+  let text;
+  if(weeklyMode){
+    const d=getWeeklyData();const k=weekKey();
+    text=`Cube Maze Weekly ${k}\n${used} moves (par: ${level.par})${d.best[k]?` · best ${d.best[k]}`:''}`;
+  }else{
+    const key=todayKey();const data=getDailyData();
+    const stars=data.done[key]||0;
+    text=`Cube Maze Daily ${key} ${'★'.repeat(stars)}\n${used} moves (par: ${level.par})`;
+  }
+  if(navigator.share){navigator.share({title:'Cube Maze',text});}
+  else if(navigator.clipboard){
+    navigator.clipboard.writeText(text).catch(()=>{});
+    const btn=document.getElementById('toastShare');
+    if(btn){const orig=btn.textContent;btn.textContent='Copied!';setTimeout(()=>btn.textContent=orig,1800);}
+  }
+}
+
 function startEndlessLevel(n){
   const isBoss=n%5===0;
   bossMode=isBoss;
   endlessMode=true;endlessCurrent=n;
-  levelMode=false;menuMode=false;
+  levelMode=false;ghostMode=false;dailyMode=false;weeklyMode=false;menuMode=false;
   hideLevelSelect();
   document.getElementById('mainMenu').classList.add('out');
   showGameUI();
+  setWorld(1);
   if(isBoss){
     applyBossTheme();
-    bossDuration=Math.max(35,70-(Math.floor(n/5)-1)*4);
+    bossDuration=Math.max(25,49-(Math.floor(n/5)-1)*3);
     bossTimeLeft=bossDuration;
     document.getElementById('bossOverlay').classList.add('active');
     document.getElementById('bossOverlay').style.animationDuration='1.2s';
@@ -1348,7 +3030,7 @@ function startEndlessLevel(n){
     const lbl=document.getElementById('hBudgetLabel');
     if(lbl)lbl.textContent='Time';
   } else {
-    applyTheme(1);
+    applyTheme(1);applySkin(activeSkin);
     document.getElementById('bossOverlay').classList.remove('active');
     document.getElementById('hudTitle').textContent=`Endless · Lv ${n}`;
     const lbl=document.getElementById('hBudgetLabel');
@@ -1363,17 +3045,39 @@ function enterEndless(){
   const best=getEndlessBest();
   startEndlessLevel(best+1);
 }
+function startGhostChase(seed){
+  ghostMode=true;dailyMode=false;weeklyMode=false;levelMode=false;endlessMode=false;bossMode=false;menuMode=false;
+  currentLevelId=null;
+  hideLevelSelect();
+  document.getElementById('mainMenu').classList.add('out');
+  showGameUI();
+  applyTheme(1);applySkin(activeSkin);setWorld(1);
+  document.getElementById('bossOverlay').classList.remove('active');
+  document.getElementById('hudTitle').textContent='Ghost Chase';
+  const lbl=document.getElementById('hBudgetLabel');if(lbl)lbl.textContent='Ghost';
+  const hb=document.getElementById('hBudget');if(hb)hb.style.color='';
+  ghost=null;animGhost=null;ghostHit=false;
+  const built=buildGhostLevel(seed||((Math.random()*1e9)|0));
+  startLevel(5,built.level.seed,built.level);  // preset the verified maze
+  ghost=built.ghost;                            // proven-safe pursuer spawn
+  buildScene();                                 // rebuild so the ghost mesh appears
+  updateHUD();
+}
 function goToMenu(){
   menuMode=false;
   levelMode=false;currentLevelId=null;
   endlessMode=false;endlessCurrent=0;
-  bossMode=false;bossTimeLeft=0;bossDuration=0;
+  bossMode=false;bossTimeLeft=0;bossDuration=0;dailyMode=false;weeklyMode=false;
+  ghostMode=false;ghost=null;animGhost=null;ghostHit=false;
   document.getElementById('bossOverlay').classList.remove('active');
   const _lbl=document.getElementById('hBudgetLabel');if(_lbl)_lbl.textContent='Budget left';
   const _hb=document.getElementById('hBudget');if(_hb)_hb.style.color='';
-  applyTheme(1);
+  applyTheme(1);setWorld(1);
   stopAmbient();
   refreshEndlessBtn();
+  refreshDailyBtn();
+  refreshWeeklyBtn();
+  refreshCoins();
   hideGameUI();
   hideToast();
   hideLevelSelect();
@@ -1400,13 +3104,24 @@ function link(open,a,b){
   open[a.join(',')].add(dirKey(d));
   open[b.join(',')].add(dirKey(negDir(d)));
 }
-function customLevel(N,links,pivotCells,startCell,startOri,goal){
+// One-way passage: crossable a -> b only (`open` is directional, so this is
+// just "don't open the reverse"). Rendered as an amber arrow gate.
+function linkOneWay(open,a,b){
+  const d=[b[0]-a[0],b[1]-a[1],b[2]-a[2]];
+  open[a.join(',')].add(dirKey(d));
+}
+// opts (all optional): {oneWays:[[a,b],...], ice:[[x,y,z],...], keys:[[x,y,z],...]}
+function customLevel(N,links,pivotCells,startCell,startOri,goal,opts){
+  opts=opts||{};
   const open=emptyOpen(N);
   links.forEach(([a,b])=>link(open,a,b));
+  (opts.oneWays||[]).forEach(([a,b])=>linkOneWay(open,a,b));
   const pivots=new Set(pivotCells.map(c=>c.join(',')));
-  const {cellBest}=solveBFS(open,N,pivots,startCell,startOri);
+  const ice=opts.ice?new Set(opts.ice.map(c=>c.join(','))):undefined;
+  const keys=opts.keys;
+  const {cellBest}=solveBFS(open,N,pivots,startCell,startOri,{ice,keys});
   const par=cellBest.get(goal.join(','));
-  return {N,open,pivots,startCell,startOri,goal,seed:0,par};
+  return {N,open,pivots,startCell,startOri,goal,seed:0,par,ice,keys};
 }
 const TUT_LEVELS=[
   { label:'Move around',
@@ -1438,12 +3153,17 @@ const WORLDS=[
     floor:0x221008,floorEdge:0x7a3a14,wall:0xa04825,wallTop:0xff9060,
     ghost:0x180b05,ghostEdge:0x5a2510,player:0xffd45a,goal:0x5affa1,pivot:0xff6655,
   }},
+  {id:3,name:'VAULT',accent:'#c9b8f0',pivotCol:'#e8dcff',col:{
+    floor:0x14101f,floorEdge:0x2e2650,wall:0x453a78,wallTop:0xd8c8ff,
+    ghost:0x0c0a16,ghostEdge:0x1e1836,player:0xffd45a,goal:0x5affa1,pivot:0xe8dcff,
+  }},
 ];
 function applyTheme(worldId){
   const w=WORLDS.find(x=>x.id===worldId)||WORLDS[0];
   Object.assign(COL,w.col);
   document.documentElement.style.setProperty('--accent',w.accent);
   document.documentElement.style.setProperty('--pivot',w.pivotCol);
+  applyColorblind();
 }
 function applyBossTheme(){
   Object.assign(COL,{
@@ -1452,6 +3172,299 @@ function applyBossTheme(){
   });
   document.documentElement.style.setProperty('--accent','#ff2c2c');
   document.documentElement.style.setProperty('--pivot','#ff4444');
+  applyColorblind();
+}
+// High-contrast, colourblind-distinct palette for goal (cyan) + pivots (yellow).
+// Re-run after any COL mutation (themes/skins) so it always wins. Shape decals in
+// buildScene() give a colour-independent cue as well.
+function applyColorblind(){
+  if(!SETTINGS.colorblind)return;
+  COL.goal=0x2ee6ff; COL.pivot=0xffd21a;
+  document.documentElement.style.setProperty('--pivot','#ffd21a');
+  document.documentElement.style.setProperty('--good','#2ee6ff');
+}
+
+/* ── Per-world atmospheric backdrop ───────────────────────────────── */
+let emberInterval=null, emberActive=false;
+function startEmberField(){
+  if(emberActive)return;
+  emberActive=true;
+  const el=document.getElementById('emberField');if(!el)return;
+  el.classList.add('show');
+  function spawn(){
+    if(!emberActive)return;
+    const dot=document.createElement('div');dot.className='ember-dot';
+    const sz=(2+Math.random()*4).toFixed(1)+'px';
+    const left=(Math.random()*100).toFixed(1)+'%';
+    const dur=(6+Math.random()*6).toFixed(1)+'s';
+    const drift=(Math.random()*60-30).toFixed(0)+'px';
+    dot.style.cssText=`left:${left};width:${sz};height:${sz};animation-duration:${dur};--drift:${drift}`;
+    el.appendChild(dot);
+    setTimeout(()=>{if(dot.parentNode===el)el.removeChild(dot);},parseFloat(dur)*1000+300);
+  }
+  emberInterval=setInterval(spawn,450);
+  for(let i=0;i<6;i++)setTimeout(spawn,i*150);
+}
+function stopEmberField(){
+  emberActive=false;
+  clearInterval(emberInterval);emberInterval=null;
+  const el=document.getElementById('emberField');if(el){el.classList.remove('show');el.innerHTML='';}
+}
+let starFieldActive=false;
+function startStarField(){
+  if(starFieldActive)return;
+  starFieldActive=true;
+  const el=document.getElementById('starField');if(!el)return;
+  el.innerHTML='';
+  el.classList.add('show');
+  for(let i=0;i<50;i++){
+    const s=document.createElement('div');s.className='star-dot';
+    const sz=(1+Math.random()*2).toFixed(1)+'px';
+    s.style.cssText=`left:${(Math.random()*100).toFixed(1)}%;top:${(Math.random()*100).toFixed(1)}%;`+
+      `width:${sz};height:${sz};animation-duration:${(2+Math.random()*3).toFixed(1)}s;`+
+      `animation-delay:${(Math.random()*3).toFixed(1)}s`;
+    el.appendChild(s);
+  }
+}
+function stopStarField(){
+  starFieldActive=false;
+  const el=document.getElementById('starField');if(el){el.classList.remove('show');el.innerHTML='';}
+}
+function applyBackdrop(worldId){
+  const bd=document.getElementById('backdrop');
+  if(bd)bd.className=worldId===2?'bg-ember':worldId===3?'bg-vault':'bg-origin';
+  if(worldId===2){stopStarField();startEmberField();}
+  else if(worldId===3){stopEmberField();startStarField();}
+  else{stopEmberField();stopStarField();}
+}
+function setWorld(id){currentWorldId=id;applyBackdrop(id);}
+
+/* ── Unlockable skins ─────────────────────────────────────────────── */
+const SKINS=[
+  {id:'neon',name:'Neon',accent:'#00ff88',pivotCol:'#ff00ff',
+   unlock:'Complete all 30 campaign levels',
+   col:{floor:0x070714,floorEdge:0x0d1a10,wall:0x0e2a18,wallTop:0x00ff88,
+        ghost:0x040408,ghostEdge:0x0a1010,player:0xff00ff,goal:0x00ffff,pivot:0xff00ff}},
+  {id:'midnight',name:'Midnight',accent:'#c9a84c',pivotCol:'#c9a84c',
+   unlock:'Reach endless level 20',
+   col:{floor:0x060814,floorEdge:0x121a2e,wall:0x1a2040,wallTop:0xc9a84c,
+        ghost:0x040509,ghostEdge:0x0a0f1a,player:0xffd45a,goal:0x5affa1,pivot:0xc9a84c}},
+];
+function getUnlockedSkins(){
+  const u=[];
+  const prog=getLevelProgress();
+  if(LEVELS.every(l=>prog[l.id]&&prog[l.id].completed))u.push('neon');
+  if(getEndlessBest()>=20)u.push('midnight');
+  return u;
+}
+function applySkin(id){
+  if(!id)return;
+  const skin=SKINS.find(s=>s.id===id);
+  if(!skin||!getUnlockedSkins().includes(id)){activeSkin=null;storageSet('cubeMazeSkin','');return;}
+  Object.assign(COL,skin.col);
+  document.documentElement.style.setProperty('--accent',skin.accent);
+  document.documentElement.style.setProperty('--pivot',skin.pivotCol);
+  applyColorblind();
+}
+function checkSkinUnlocks(){
+  const prev=(storageGet('cubeMazeUnlocksSeen')||'').split(',').filter(Boolean);
+  const now=getUnlockedSkins();
+  now.forEach(id=>{
+    if(!prev.includes(id)){
+      const s=SKINS.find(x=>x.id===id);
+      if(s){
+        const el=document.getElementById('achieveToast');
+        if(el){el.textContent=`Theme unlocked: ${s.name}!`;el.classList.add('show');
+          setTimeout(()=>el.classList.remove('show'),3500);}
+      }
+    }
+  });
+  storageSet('cubeMazeUnlocksSeen',now.join(','));
+  const btn=document.getElementById('menuThemes');
+  if(btn)btn.style.display=now.length>0?'inline-flex':'none';
+}
+function renderThemes(){
+  const grid=document.getElementById('themeGrid');if(!grid)return;
+  grid.innerHTML='';
+  const unlocked=getUnlockedSkins();
+  const defCard=document.createElement('button');
+  defCard.className='theme-card'+(!activeSkin?' active-theme':'');
+  defCard.innerHTML='<div class="theme-name">Default</div><div class="theme-desc">World palette per level</div>';
+  defCard.onclick=()=>{activeSkin=null;storageSet('cubeMazeSkin','');hideThemes();};
+  grid.appendChild(defCard);
+  SKINS.forEach(s=>{
+    const isU=unlocked.includes(s.id);
+    const card=document.createElement('button');
+    card.className='theme-card'+(isU?'':' locked')+(activeSkin===s.id?' active-theme':'');
+    card.innerHTML=`<div class="theme-name">${s.name}</div>`+
+      `<div class="theme-desc">${isU?'Unlocked':'Locked — '+s.unlock}</div>`;
+    if(isU)card.onclick=()=>{activeSkin=s.id;storageSet('cubeMazeSkin',s.id);hideThemes();};
+    grid.appendChild(card);
+  });
+}
+function showThemes(){renderThemes();document.getElementById('themeBox').classList.remove('out');document.getElementById('mainMenu').classList.add('out');}
+function hideThemes(){document.getElementById('themeBox').classList.add('out');document.getElementById('mainMenu').classList.remove('out');}
+
+/* ── Playable characters ──────────────────────────────────────────────
+   The registry the picker + addPlayer() share. `charSkin` stores the chosen
+   id (null => the themed chameleon). Each entry's `build` (defined up in the
+   rendering section) makes the actual mesh; `emoji`/`color` drive the card.  */
+// Cosmetics that are free from the start (never need buying).
+const FREE_COSMETICS=new Set(['cat','amber','line']);
+const CHARACTERS=[
+  {id:null,      name:'Chameleon', emoji:'🦎', themed:true, color:0xffd45a, build:buildChameleon, cost:0},
+  {id:'cat',     name:'Cat',       emoji:'🐱', color:0x9aa0ad, accent:0x8fe3a0, build:buildCat, cost:0},
+  {id:'fox',     name:'Fox',       emoji:'🦊', color:0xff7a2f, accent:0xfff1e0, build:buildFox, cost:150},
+  {id:'frog',    name:'Frog',      emoji:'🐸', color:0x5bc94a, accent:0xffe14d, build:buildFrog, cost:220},
+  {id:'rabbit',  name:'Rabbit',    emoji:'🐰', color:0xe6e7f2, accent:0xff9bbd, build:buildRabbit, cost:340},
+  {id:'penguin', name:'Penguin',   emoji:'🐧', color:0x2b2f3a, accent:0xffa42f, build:buildPenguin, cost:500},
+  {id:'bear',    name:'Bear',      emoji:'🐻', color:0x9c6b3f, accent:0x2a1a10, build:buildBear, cost:750},
+];
+function setCharSkin(id){
+  const def=CHARACTERS.find(c=>c.id===id);
+  if(def&&!isOwned(id)){                        // locked → try to buy
+    if(!buyCosmetic(id,def.cost||0)){renderCharacters();return;}
+  }
+  charSkin=id;
+  storageSet('cubeMazeCharSkin',id||'');
+  if(playerObj&&cubeGroup){          // live-update the character if a game is on
+    if(animRot)buildSpinScene(); else buildScene();
+  }
+  renderCharacters();refreshCoins();
+}
+const hex6=n=>'#'+n.toString(16).padStart(6,'0');
+// Shared card builder for cosmetic pickers: shows an owned item as selectable,
+// a locked item with its coin price (dimmed unless affordable).
+function cosmeticCard(id,active,chipHTML,name,cost,onPick){
+  const owned=isOwned(id);
+  const afford=owned||getCoins()>=cost;
+  const card=document.createElement('button');
+  card.className='skin-card'+(active?' active-skin':'')+(owned?'':' locked')+(!afford?' cant-afford':'');
+  card.innerHTML=chipHTML+`<div class="skin-name">${name}</div>`+
+    (owned?'':`<div class="skin-price">🪙 ${cost}</div>`);
+  card.onclick=onPick;
+  return card;
+}
+// ── 3D thumbnails for the character picker ──────────────────────────────
+// A tiny offscreen renderer snapshots each animal model to a PNG data-URL the
+// card shows as a real preview of the skin (cached; the themed chameleon
+// re-renders when the world palette changes).
+let _thumbR=null,_thumbScene=null,_thumbCam=null;
+const _charThumbs={};
+function ensureThumbRenderer(){
+  if(_thumbR)return;
+  _thumbR=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+  _thumbR.setPixelRatio(2);_thumbR.setSize(120,120);
+  _thumbR.toneMapping=THREE.ACESFilmicToneMapping;_thumbR.toneMappingExposure=1.2;
+  _thumbScene=new THREE.Scene();
+  _thumbCam=new THREE.PerspectiveCamera(30,1,0.1,20);
+  _thumbCam.position.set(0.62,0.5,0.92);_thumbCam.lookAt(0,0.23,0);
+  _thumbScene.add(new THREE.AmbientLight(0x93a4ff,0.72));
+  const k=new THREE.DirectionalLight(0xffffff,1.2);k.position.set(2.5,4,3);_thumbScene.add(k);
+  const rim=new THREE.DirectionalLight(0x6a8cff,0.55);rim.position.set(-3,1.4,-1.8);_thumbScene.add(rim);
+}
+function charThumb(def){
+  const key=def.themed?('cham_'+COL.player.toString(16)):def.id;
+  if(_charThumbs[key])return _charThumbs[key];
+  ensureThumbRenderer();
+  const cc=def.themed?{color:COL.player,accent:COL.player}:{color:def.color,accent:def.accent};
+  const g=def.build(cc);
+  g.rotation.y=0.32;                 // slight 3/4 so face + flank both read
+  _thumbScene.add(g);
+  _thumbR.render(_thumbScene,_thumbCam);
+  const url=_thumbR.domElement.toDataURL('image/png');
+  _thumbScene.remove(g);
+  g.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material&&n.material.dispose)n.material.dispose();});
+  _charThumbs[key]=url;
+  return url;
+}
+function renderCharacters(){
+  const grid=document.getElementById('charGrid');if(!grid)return;
+  grid.innerHTML='';
+  CHARACTERS.forEach(c=>{
+    const col=c.themed?COL.player:c.color;
+    const chip=`<div class="skin-chip thumb-chip" style="--chip-glow:${hex6(col)}66">`+
+      `<img src="${charThumb(c)}" alt="${c.name}" draggable="false"></div>`;
+    grid.appendChild(cosmeticCard(c.id,charSkin===c.id,chip,c.name,c.cost||0,()=>setCharSkin(c.id)));
+  });
+}
+function showCharacters(){renderCharacters();refreshCoins();document.getElementById('charBox').classList.remove('out');document.getElementById('mainMenu').classList.add('out');}
+function hideCharacters(){document.getElementById('charBox').classList.add('out');document.getElementById('mainMenu').classList.remove('out');}
+
+/* ── Trail — colour + visual style of the explored route ────────────────
+   `color` tints the trail body, `glow` its emissive bloom. Styles are drawn
+   by TRAIL_STYLE_DEFS (up in the rendering section); this list just drives
+   the picker UI.                                                          */
+const TRAIL_COLORS=[
+  {id:'amber',   name:'Amber',   color:0xffe14d, glow:0xffd000, cost:0},
+  {id:'crimson', name:'Crimson', color:0xff6a6a, glow:0xff2c2c, cost:60},
+  {id:'azure',   name:'Azure',   color:0x6fd0ff, glow:0x2a8fff, cost:60},
+  {id:'emerald', name:'Emerald', color:0x6dffb0, glow:0x18cc72, cost:100},
+  {id:'violet',  name:'Violet',  color:0xd1a3ff, glow:0x9b4dff, cost:100},
+  {id:'rose',    name:'Rose',    color:0xffa0d0, glow:0xff4d94, cost:100},
+  {id:'ice',     name:'Ice',     color:0xeaffff, glow:0xa0e8ff, cost:160},
+  {id:'mono',    name:'Mono',    color:0xe4e7f0, glow:0xaab0c4, cost:160},
+];
+const TRAIL_STYLES=[
+  {id:'line',       name:'Classic',    icon:'━━━', cost:0},
+  {id:'dashed',     name:'Dashed',     icon:'╌╌╌', cost:90},
+  {id:'beads',      name:'Beads',      icon:'•  •  •', cost:90},
+  {id:'diamond',    name:'Diamond',    icon:'◆ ◆ ◆', cost:150},
+  {id:'footprints', name:'Footprints', icon:'👣', cost:220},
+];
+function setTrailColor(id){
+  const def=TRAIL_COLORS.find(c=>c.id===id);
+  if(def&&!isOwned(id)){if(!buyCosmetic(id,def.cost||0)){renderTrailPickers();return;}}
+  trailColor=id;storageSet('cubeMazeTrailColor',id);
+  if(level&&!animRot)rebuildTrail();
+  renderTrailPickers();refreshCoins();
+}
+function setTrailStyle(id){
+  const def=TRAIL_STYLES.find(s=>s.id===id);
+  if(def&&!isOwned(id)){if(!buyCosmetic(id,def.cost||0)){renderTrailPickers();return;}}
+  trailStyle=id;storageSet('cubeMazeTrailStyle',id);
+  if(level&&!animRot)rebuildTrail();
+  renderTrailPickers();refreshCoins();
+}
+function renderTrailPickers(){
+  const cg=document.getElementById('trailColorGrid');
+  if(cg){
+    cg.innerHTML='';
+    TRAIL_COLORS.forEach(c=>{
+      const chip=`<div class="skin-chip" style="background:radial-gradient(circle at 38% 32%, ${hex6(c.color)}, ${hex6(c.glow)} 70%, rgba(0,0,0,.35));--chip-glow:${hex6(c.glow)}77"></div>`;
+      cg.appendChild(cosmeticCard(c.id,trailColor===c.id,chip,c.name,c.cost||0,()=>setTrailColor(c.id)));
+    });
+  }
+  const sg=document.getElementById('trailStyleGrid');
+  if(sg){
+    sg.innerHTML='';
+    TRAIL_STYLES.forEach(s=>{
+      const tc=TRAIL_COLORS.find(c=>c.id===trailColor)||TRAIL_COLORS[0];
+      const chip=`<div class="skin-chip" style="--chip-col:#161a2e;--chip-glow:${hex6(tc.glow)}66;color:${hex6(tc.color)};font-size:15px;letter-spacing:1px">${s.icon}</div>`;
+      sg.appendChild(cosmeticCard(s.id,trailStyle===s.id,chip,s.name,s.cost||0,()=>setTrailStyle(s.id)));
+    });
+  }
+}
+function showTrailPicker(){renderTrailPickers();refreshCoins();document.getElementById('trailBox').classList.remove('out');document.getElementById('mainMenu').classList.add('out');}
+function hideTrailPicker(){document.getElementById('trailBox').classList.add('out');document.getElementById('mainMenu').classList.remove('out');}
+
+/* ── Settings ─────────────────────────────────────────────────────────
+   Reachable from the menu (returns to menu) or the in-game gear (returns to
+   play). Controls read/write the shared SETTINGS object + persist.          */
+let settingsFromMenu=true;
+function showSettings(fromMenu){
+  settingsFromMenu=fromMenu!==false;
+  document.getElementById('setVolume').value=Math.round(SETTINGS.volume*100);
+  document.getElementById('setReduceMotion').checked=SETTINGS.reduceMotion;
+  document.getElementById('setColorblind').checked=SETTINGS.colorblind;
+  document.getElementById('setHaptics').checked=SETTINGS.haptics;
+  document.getElementById('settingsBack').textContent=settingsFromMenu?'← Menu':'← Back';
+  if(settingsFromMenu)document.getElementById('mainMenu').classList.add('out');
+  document.getElementById('settingsBox').classList.remove('out');
+}
+function hideSettings(){
+  document.getElementById('settingsBox').classList.add('out');
+  if(settingsFromMenu)document.getElementById('mainMenu').classList.remove('out');
 }
 
 const LEVELS=[
@@ -1468,15 +3481,126 @@ const LEVELS=[
   // World 2 — Ember
   {id:11,world:2, name:'Ember Wake',    size:3, build:()=>buildLevel(3,11011)},
   {id:12,world:2, name:'Hot Streak',    size:3, build:()=>buildLevel(3,23451)},
-  {id:13,world:2, name:'Twisted Path',  size:3, build:()=>buildLevel(3,34129)},
+  {id:13,world:2, name:'Twisted Path',  size:3, build:()=>buildLevel(3,34129,{mechanic:'oneway'})},
   {id:14,world:2, name:'Cinder Run',    size:5, build:()=>buildLevel(5,45678)},
   {id:15,world:2, name:'Heat Sink',     size:5, build:()=>buildLevel(5,56789)},
   {id:16,world:2, name:'Magma Core',    size:5, build:()=>buildLevel(5,67890)},
-  {id:17,world:2, name:'Inferno',       size:5, build:()=>buildLevel(5,78901)},
+  {id:17,world:2, name:'Inferno',       size:5, build:()=>buildLevel(5,78901,{mechanic:'oneway'})},
   {id:18,world:2, name:'Volcanic',      size:7, build:()=>buildLevel(7,89012)},
   {id:19,world:2, name:'Brimstone',     size:7, build:()=>buildLevel(7,90123)},
   {id:20,world:2, name:'Eternal Flame', size:7, build:()=>buildLevel(7,10203)},
+  // World 3 — Vault
+  {id:21,world:3, name:'Ash Settles',   size:5, build:()=>buildLevel(5,21021)},
+  {id:22,world:3, name:'Cold Room',     size:5, build:()=>buildLevel(5,22022,{mechanic:'ice'})},
+  {id:23,world:3, name:'Hollow Frame',  size:5, build:()=>buildLevel(5,23023,{mechanic:'oneway'})},
+  {id:24,world:3, name:'Old Signal',    size:5, build:()=>buildLevel(5,24024,{mechanic:'keys'})},
+  {id:25,world:3, name:'Glass Floor',   size:7, build:()=>buildLevel(7,25025,{mechanic:'ice'})},
+  {id:26,world:3, name:'Still Water',   size:7, build:()=>buildLevel(7,26026,{mechanic:'ice'})},
+  {id:27,world:3, name:'What Remains',  size:7, build:()=>buildLevel(7,27027)},
+  {id:28,world:3, name:'The Long Wait', size:7, build:()=>buildLevel(7,28028,{mechanic:'keys'})},
+  {id:29,world:3, name:'Last Door',     size:7, build:()=>buildLevel(7,29029,{mechanic:'keys'})},
+  {id:30,world:3, name:'The Vault',     size:7, build:()=>buildLevel(7,30030)},
 ];
+
+/* ── Campaign story: "The Sleeping Cube" ──────────────────────────── */
+const STORY={
+  prologue:{
+    title:'SOMETHING IS DREAMING',
+    body:[
+      'Something old is dreaming, deep inside this shape.',
+      'You are the thought that woke it — not enough to rouse it fully, only enough to be noticed. It lets you in. Not out of kindness. Out of curiosity.',
+      'Find what it\'s protecting before it decides you\'re not welcome.',
+    ],
+    btn:'Enter ▸',
+  },
+  transition11:{
+    title:'THE CALM ENDS HERE',
+    body:[
+      'The outer chambers are behind you. Whatever they were, they were built to be understood.',
+      'What\'s below wasn\'t built for anyone. It\'s older, hotter, and it just felt you arrive.',
+      'This isn\'t a lesson anymore. This is the cube deciding whether you leave.',
+    ],
+    btn:'Descend ▸',
+  },
+  transition21:{
+    title:'PAST THE FIRE',
+    body:[
+      'The heat breaks. Not because you won — because it let you through.',
+      'What\'s ahead isn\'t angry. It\'s just quiet. Older than the fire. Older than the walls that came before it.',
+      'You\'re not being tested anymore. You\'re being shown something.',
+    ],
+    btn:'Continue ▸',
+  },
+  boss10:{
+    title:'MASTER CUBE',
+    body:[
+      'You\'ve learned its shape. Now it wants to know if you understand it — or just got lucky.',
+      'No more open doors. Only ones you earn. And it\'s counting.',
+    ],
+    btn:'Begin ▸',
+  },
+  boss20:{
+    title:'ETERNAL FLAME',
+    body:[
+      'This is its fear, given a shape. Whatever it thinks it\'s protecting, this is as hard as it\'s going to fight for it.',
+      'Whatever happens next, happens fast.',
+    ],
+    btn:'Begin ▸',
+  },
+  boss30:{
+    title:'THE VAULT',
+    body:[
+      'This is the center. Not a weapon. Not a guardian — just a room, and something small inside it that has been alone for a very long time.',
+      'It won\'t wait forever. Nothing does. Move.',
+    ],
+    btn:'Begin ▸',
+  },
+  ending:{
+    title:'WHAT IT WAS PROTECTING',
+    body:[
+      'It was never a monster. It was just old, and alone, and afraid of being found by the wrong kind of thing.',
+      'You weren\'t the wrong kind of thing.',
+      'The mapped part ends here. What\'s left is unmapped, unnamed, and doesn\'t end.',
+    ],
+    btn:'Enter the Unmapped ▸',
+    btn2:'← Menu',
+  },
+  worldTagline:{
+    1:'The calm chambers. It\'s still asleep — for now.',
+    2:'It knows you\'re here.',
+    3:'Past the fire. It isn\'t angry anymore.',
+  },
+  captions:{
+    1:'The first door was never locked. It just needed to be noticed.',
+    2:'Nothing here goes where it looks like it goes.',
+    3:'It shows you the trick once. It expects you to remember.',
+    4:'A real test — small enough to forgive mistakes.',
+    5:'Every path here was built to be doubted.',
+    6:'Two turns. One moment of certainty.',
+    7:'Order this deep isn\'t an accident. It\'s a message.',
+    8:'The chambers widen. So does its attention.',
+    9:'You\'re not solving a maze anymore. You\'re reading its mind.',
+    11:'Something felt you arrive.',
+    12:'It\'s not guiding you anymore. It\'s reacting to you.',
+    13:'The paths lie now. On purpose.',
+    14:'Move like it\'s already too late. It nearly is.',
+    15:'This is where it keeps what it doesn\'t want found.',
+    16:'It\'s stopped pretending to sleep.',
+    17:'It isn\'t testing you anymore. It\'s angry.',
+    18:'One wrong turn and it stops being patient.',
+    19:'The last calm room was many rooms ago.',
+    21:'The fire is over. Nothing chases you here.',
+    22:'It\'s not warning you away anymore. It\'s letting you look.',
+    23:'This place remembers being something else.',
+    24:'Something here has been calling for a very long time.',
+    25:'Careful. Some of this was never meant to hold weight.',
+    26:'Nothing moves here unless you make it.',
+    27:'Whatever happened here, it happened before there were doors.',
+    28:'It has been so long since anything answered back.',
+    29:'One door left. It already knows you\'re going to open it.',
+  },
+};
+
 let levelMode=false, currentLevelId=null;
 
 let _progressMem={};  // in-memory fallback when localStorage is unavailable
@@ -1505,6 +3629,129 @@ function calcStars(used,par){
   if(used<=Math.ceil(par*1.5))return 2;
   return 1;
 }
+
+/* ── Achievements ─────────────────────────────────────────────────── */
+const ACHIEVEMENTS=[
+  {id:'first_clear', title:'First Step',   desc:'Complete any level'},
+  {id:'at_par',      title:'Optimal',      desc:'Solve at par or better'},
+  {id:'three_star',  title:'Sharp',        desc:'3-star any campaign level'},
+  {id:'five_stars',  title:'Collector',    desc:'Earn 15 total campaign stars'},
+  {id:'origin_done', title:'World 1 Clear',desc:'3-star all 10 Origin levels'},
+  {id:'ember_done',  title:'World 2 Clear',desc:'3-star all 10 Ember levels'},
+  {id:'vault_done',  title:'World 3 Clear',desc:'3-star all 10 Vault levels'},
+  {id:'endless_10',  title:'Explorer',    desc:'Reach endless level 10'},
+  {id:'endless_25',  title:'Wanderer',     desc:'Reach endless level 25'},
+  {id:'boss_clear',  title:'Boss Slayer',  desc:'Clear a boss level'},
+  {id:'boss_speed',  title:'Speed Demon',  desc:'Beat a boss with >50% time left'},
+  {id:'daily_first', title:'Daily Grind',  desc:'Complete your first daily challenge'},
+  {id:'streak_3',    title:'Habit',        desc:'Maintain a 3-day daily streak'},
+  {id:'streak_7',    title:'Dedicated',    desc:'Maintain a 7-day daily streak'},
+  {id:'story_complete', title:'The Cube Opens', desc:'Finish the campaign story'},
+];
+function getStorySeen(){
+  try{const s=storageGet('cubeMazeStorySeen');if(s)return JSON.parse(s);}catch(_){}
+  return{};
+}
+function markStorySeen(key){
+  const s=getStorySeen();s[key]=1;storageSet('cubeMazeStorySeen',JSON.stringify(s));
+}
+function showStory(beat,cls,onBtn1,onBtn2){
+  const s=STORY[beat]; if(!s){onBtn1();return;}
+  document.getElementById('storyTitle').textContent=s.title;
+  document.getElementById('storyBody').innerHTML=s.body.map(p=>`<p>${p}</p>`).join('');
+  const b1=document.getElementById('storyBtn1');
+  b1.textContent=s.btn;
+  b1.onclick=()=>{hideStory();markStorySeen(beat);onBtn1();};
+  const b2=document.getElementById('storyBtn2');
+  if(s.btn2){
+    b2.style.display='';b2.textContent=s.btn2;
+    b2.onclick=()=>{hideStory();markStorySeen(beat);onBtn2&&onBtn2();};
+  } else {
+    b2.style.display='none';
+  }
+  document.getElementById('storyOverlay').className='show '+(cls||'');
+}
+function hideStory(){document.getElementById('storyOverlay').classList.remove('show');}
+function showCaption(id){
+  const text=STORY.captions[id]; if(!text)return;
+  const el=document.getElementById('lvlCaption'); if(!el)return;
+  el.textContent=text; el.classList.add('show');
+  clearTimeout(showCaption._t);
+  showCaption._t=setTimeout(()=>el.classList.remove('show'),3200);
+}
+function getEarnedAchievements(){
+  try{const s=storageGet('cubeMazeAchievements');if(s)return JSON.parse(s);}catch(_){}
+  return[];
+}
+function awardAchievement(id){
+  const earned=getEarnedAchievements();
+  if(earned.includes(id))return;
+  earned.push(id);
+  storageSet('cubeMazeAchievements',JSON.stringify(earned));
+  showAchievementToast(id);
+}
+function showAchievementToast(id){
+  const def=ACHIEVEMENTS.find(a=>a.id===id);if(!def)return;
+  const el=document.getElementById('achieveToast');if(!el)return;
+  el.textContent=`Achievement: ${def.title}`;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),3200);
+}
+function checkAchievements(ctx){
+  const{used,stars,wasBoss,timeSpared,bossDur,isDaily,dailyStreak}=ctx||{};
+  awardAchievement('first_clear');
+  if(used!==undefined&&level&&used<=level.par)awardAchievement('at_par');
+  if(stars===3)awardAchievement('three_star');
+  if(levelMode){
+    const prog=getLevelProgress();
+    let total=0;for(const k in prog)total+=(prog[k].stars||0);
+    if(total>=15)awardAchievement('five_stars');
+    const originIds=LEVELS.filter(l=>l.world===1).map(l=>l.id);
+    if(originIds.every(id=>prog[id]&&prog[id].stars===3))awardAchievement('origin_done');
+    const emberIds=LEVELS.filter(l=>l.world===2).map(l=>l.id);
+    if(emberIds.every(id=>prog[id]&&prog[id].stars===3))awardAchievement('ember_done');
+    const vaultIds=LEVELS.filter(l=>l.world===3).map(l=>l.id);
+    if(vaultIds.every(id=>prog[id]&&prog[id].stars===3))awardAchievement('vault_done');
+  }
+  if(wasBoss)awardAchievement('boss_clear');
+  if(wasBoss&&bossDur>0&&timeSpared/bossDur>0.5)awardAchievement('boss_speed');
+  if(isDaily){
+    awardAchievement('daily_first');
+    if(dailyStreak>=3)awardAchievement('streak_3');
+    if(dailyStreak>=7)awardAchievement('streak_7');
+  }
+}
+function checkAchievementsEndless(n){
+  if(n>=10)awardAchievement('endless_10');
+  if(n>=25)awardAchievement('endless_25');
+}
+function renderAchievements(){
+  const grid=document.getElementById('achieveGrid');if(!grid)return;
+  grid.innerHTML='';
+  const earned=getEarnedAchievements();
+  ACHIEVEMENTS.forEach((a,i)=>{
+    const card=document.createElement('div');
+    const isEarned=earned.includes(a.id);
+    card.className='ach-card '+(isEarned?'earned':'locked');
+    const d=(i*0.04).toFixed(2)+'s';
+    card.style.animationDelay=d+','+d;
+    card.innerHTML=`<div class="ach-title">${isEarned?a.title:'???'}</div>`+
+      `<div class="ach-desc">${isEarned?a.desc:'Hidden'}</div>`;
+    grid.appendChild(card);
+  });
+  const tot=document.getElementById('achieveTotal');
+  if(tot)tot.textContent=`${earned.length}/${ACHIEVEMENTS.length}`;
+}
+function showAchievements(){
+  renderAchievements();
+  document.getElementById('achieveBox').classList.remove('out');
+  document.getElementById('mainMenu').classList.add('out');
+}
+function hideAchievements(){
+  document.getElementById('achieveBox').classList.add('out');
+  document.getElementById('mainMenu').classList.remove('out');
+}
+
 function renderLevelSelect(){
   const grid=document.getElementById('levelGrid');
   grid.innerHTML='';
@@ -1517,6 +3764,13 @@ function renderLevelSelect(){
     hdr.style.color=w.accent;
     hdr.innerHTML=`<span class="world-hr"></span>${w.name}<span class="world-hr"></span>`;
     grid.appendChild(hdr);
+    if(STORY.worldTagline[w.id]){
+      const tag=document.createElement('div');
+      tag.className='world-tagline';
+      tag.style.color=w.accent;
+      tag.textContent=STORY.worldTagline[w.id];
+      grid.appendChild(tag);
+    }
     // Level buttons for this world
     LEVELS.filter(l=>l.world===w.id).forEach(lvl=>{
       const unlocked=isLevelUnlocked(lvl.id);
@@ -1554,36 +3808,48 @@ function hideLevelSelect(){
   document.getElementById('levelSelect').classList.add('out');
 }
 function startLevelById(id){
+  const seen=getStorySeen();
+  if(id===1  && !seen.prologue)    {showStory('prologue','story-origin',()=>reallyStartLevelById(id));return;}
+  if(id===11 && !seen.transition11){showStory('transition11','story-ember',()=>reallyStartLevelById(id));return;}
+  if(id===21 && !seen.transition21){showStory('transition21','story-vault',()=>reallyStartLevelById(id));return;}
+  if(id===10 && !seen.boss10)      {showStory('boss10','story-boss',()=>reallyStartLevelById(id));return;}
+  if(id===20 && !seen.boss20)      {showStory('boss20','story-boss',()=>reallyStartLevelById(id));return;}
+  if(id===30 && !seen.boss30)      {showStory('boss30','story-boss',()=>reallyStartLevelById(id));return;}
+  reallyStartLevelById(id);
+}
+function reallyStartLevelById(id){
   const def=LEVELS.find(l=>l.id===id);
   if(!def)return;
   const isBoss=id%10===0;
   bossMode=isBoss;
+  setWorld(def.world||1);
   if(isBoss){
     applyBossTheme();
-    bossDuration=def.size<=3?60:def.size<=5?110:160;
+    bossDuration=def.size<=3?40:def.size<=5?75:110;
     bossTimeLeft=bossDuration;
     document.getElementById('bossOverlay').classList.add('active');
     document.getElementById('bossOverlay').style.animationDuration='1.2s';
     const lbl=document.getElementById('hBudgetLabel');if(lbl)lbl.textContent='Time';
   } else {
-    applyTheme(def.world||1);
+    applyTheme(def.world||1);applySkin(activeSkin);
     document.getElementById('bossOverlay').classList.remove('active');
     const lbl=document.getElementById('hBudgetLabel');if(lbl)lbl.textContent='Budget left';
     const hb=document.getElementById('hBudget');if(hb)hb.style.color='';
   }
-  currentLevelId=id; levelMode=true; menuMode=false;
+  currentLevelId=id; levelMode=true; ghostMode=false; dailyMode=false; weeklyMode=false; endlessMode=false; menuMode=false;
   hideLevelSelect();
   document.getElementById('mainMenu').classList.add('out');
   showGameUI();
   document.getElementById('sizeCtrl').style.display='none';
   document.getElementById('hudTitle').textContent=isBoss?`BOSS · Level ${id}`:`Level ${id}`;
   startLevel(def.size,0,def.build());
+  if(!isBoss)showCaption(id);
 }
 
 let tutorialMode=false,tutLevelIdx=0;
 function startTutorial(){
   tutorialMode=true;tutLevelIdx=0;
-  menuMode=false;
+  ghostMode=false;menuMode=false;
   showGameUI();
   document.getElementById('mainMenu').classList.add('out');
   loadTutorialLevel();
@@ -1626,7 +3892,16 @@ document.getElementById('toastNext').onclick=()=>{
   } else if(levelMode){
     const nextId=currentLevelId+1;
     if(nextId<=LEVELS.length){startLevelById(nextId);}
-    else{levelMode=false;currentLevelId=null;showLevelSelect();}
+    else{
+      const seen=getStorySeen();
+      levelMode=false;currentLevelId=null;
+      if(!seen.ending){
+        awardAchievement('story_complete');
+        showStory('ending','story-ending',()=>enterEndless(),()=>goToMenu());
+      } else {
+        showLevelSelect();
+      }
+    }
   }
 };
 
@@ -1639,6 +3914,26 @@ function viewDir(fwd,right){
   if(is2D)return[right,0,-fwd];
   const az=orbit.az;
   return[-Math.sin(az)*fwd+Math.cos(az)*right,0,-Math.cos(az)*fwd-Math.sin(az)*right];
+}
+// Camera-relative cube rotation — the rotation counterpart to viewDir(). `base`
+// is the gesture's axis in the default (az=0) view: ±X tumbles about the screen-
+// right axis (↑/↓), ±Z rolls about the screen-forward axis (↺/↻). The axis is
+// spun by the camera azimuth and snapped to the nearest world axis, so a button
+// always produces the same on-screen tumble/roll no matter how the board is
+// orbited. Returns the world-frame 90° matrix to feed tryRotate() — and reduces
+// to the original fixed mapping at az=0, so the default view is unchanged.
+function viewRot(base){
+  let n=base;
+  if(!is2D){
+    const az=orbit.az;
+    const x= base[0]*Math.cos(az)+base[2]*Math.sin(az);
+    const z=-base[0]*Math.sin(az)+base[2]*Math.cos(az);
+    n=Math.abs(x)>=Math.abs(z)?[Math.sign(x)||1,0,0]:[0,0,Math.sign(z)||1];
+  }
+  if(n[0]===1) return RX;
+  if(n[0]===-1)return RXn;
+  if(n[2]===1) return RZ;
+  return RZn;   // n[2]===-1
 }
 window.addEventListener('keydown',e=>{
   if(menuMode)return;
@@ -1653,12 +3948,13 @@ window.addEventListener('keydown',e=>{
     case 's': case 'arrowdown':  tryMove(viewDir(-1,0)); break;
     case 'a': case 'arrowleft':  tryMove(viewDir(0,-1)); break;
     case 'd': case 'arrowright': tryMove(viewDir(0,1));  break;
-    case 'q': tryRotate(RZ); break;   // roll left
-    case 'e': tryRotate(RZn);break;   // roll right
-    case 'r': tryRotate(RX); break;   // tumble forward
-    case 'f': tryRotate(RXn);break;   // tumble back
+    case 'q': tryRotate(viewRot([0,0,1])); break;   // roll left  (about screen-forward)
+    case 'e': tryRotate(viewRot([0,0,-1]));break;   // roll right
+    case 'r': tryRotate(viewRot([-1,0,0]));break;   // tumble forward (about screen-right)
+    case 'f': tryRotate(viewRot([1,0,0])); break;   // tumble back
     case 'v': setView(is2D?'3d':'2d');break;
     case 'u': undo();break;
+    case 'h': showHint();break;
     case 'z': if(e.ctrlKey||e.metaKey){e.preventDefault();undo();}break;
   }
 });
@@ -1666,17 +3962,27 @@ document.getElementById('view3d').onclick=()=>setView('3d');
 document.getElementById('view2d').onclick=()=>setView('2d');
 document.getElementById('restart').onclick=()=>{
   tutorialMode=false;hideTutBanner();
+  if(ghostMode){hideToast();startGhostChase(currentSeed);return;}
   if(endlessMode){hideToast();startEndlessLevel(endlessCurrent);return;}
+  if(dailyMode){hideToast();startDaily();return;}
+  if(weeklyMode){hideToast();startWeekly();return;}
   if(levelMode&&currentLevelId){startLevelById(currentLevelId);return;}
   startLevel(curSize);
 };
 document.getElementById('solve').onclick=toggleAutoSolve;
+document.getElementById('hintBtn').onclick=showHint;
 document.getElementById('toastBtn').onclick=()=>{
+  if(ghostMode){goToMenu();return;}
   if(endlessMode){goToMenu();return;}
+  if(dailyMode){dailyMode=false;goToMenu();return;}
+  if(weeklyMode){weeklyMode=false;goToMenu();return;}
   tutorialMode=false;hideTutBanner();levelMode=false;currentLevelId=null;startLevel(curSize);
 };
 document.getElementById('toastRetry').onclick=()=>{
+  if(ghostMode){hideToast();startGhostChase(currentSeed);return;}
   if(endlessMode){hideToast();startEndlessLevel(endlessCurrent);return;}
+  if(dailyMode){hideToast();startDaily();return;}
+  if(weeklyMode){hideToast();startWeekly();return;}
   if(levelMode&&currentLevelId){hideToast();startLevelById(currentLevelId);return;}
   tutorialMode=false;hideTutBanner();startLevel(curSize,currentSeed);
 };
@@ -1686,10 +3992,60 @@ document.getElementById('undoBtn').onclick=undo;
 document.getElementById('soundBtn').onclick=toggleMute;
 // audioMuted declared here so it's defined before the textContent line below
 let audioCtx=null,masterGain=null,ambientNodes=[];
-let audioMuted=storageGet('cubeMazeMuted')==='1';
+// Unified settings (reduced motion, volume, colourblind cues, haptics).
+// Migrates the legacy cubeMazeMuted flag into volume on first load.
+const SETTINGS=(()=>{
+  let s={};try{s=JSON.parse(storageGet('cubeMazeSettings')||'{}');}catch(_){}
+  const legacyMuted=storageGet('cubeMazeMuted')==='1';
+  return {
+    reduceMotion:!!s.reduceMotion,
+    colorblind:!!s.colorblind,
+    haptics:s.haptics!==undefined?!!s.haptics:true,
+    volume:s.volume!==undefined?+s.volume:(legacyMuted?0:0.4),
+  };
+})();
+function saveSettings(){storageSet('cubeMazeSettings',JSON.stringify(SETTINGS));}
+let REDUCE=SETTINGS.reduceMotion;
+document.body.classList.toggle('reduce-motion',REDUCE);
+applyColorblind();   // override COL.goal/pivot before the first buildScene if enabled
+let audioMuted=SETTINGS.volume<=0.001;
+let activeSkin=storageGet('cubeMazeSkin')||null;
+let charSkin=storageGet('cubeMazeCharSkin')||null;
+if(charSkin&&!CHARACTERS.some(c=>c.id===charSkin))charSkin=null; // ignore stale/legacy ids
+let trailColor=storageGet('cubeMazeTrailColor')||'amber';
+if(!TRAIL_COLORS.some(c=>c.id===trailColor))trailColor='amber';
+let trailStyle=storageGet('cubeMazeTrailStyle')||'line';
+if(!TRAIL_STYLES.some(s=>s.id===trailStyle))trailStyle='line';
 document.getElementById('soundBtn').textContent=audioMuted?'Sound: Off':'Sound: On';
 document.getElementById('menuPlay').onclick=()=>enterEndless();
 document.getElementById('menuLevels').onclick=()=>showLevelSelect();
+document.getElementById('menuDaily').onclick=startDaily;
+document.getElementById('menuWeekly').onclick=startWeekly;
+document.getElementById('menuGhost').onclick=()=>startGhostChase();
+document.getElementById('menuAchieve').onclick=showAchievements;
+document.getElementById('achieveBack').onclick=hideAchievements;
+document.getElementById('menuThemes').onclick=showThemes;
+document.getElementById('themeBack').onclick=hideThemes;
+document.getElementById('menuCharacter').onclick=showCharacters;
+document.getElementById('charBack').onclick=hideCharacters;
+document.getElementById('menuTrail').onclick=showTrailPicker;
+document.getElementById('trailBack').onclick=hideTrailPicker;
+document.getElementById('menuSettings').onclick=()=>showSettings(true);
+document.getElementById('settingsBtn').onclick=()=>showSettings(false);
+document.getElementById('settingsBack').onclick=hideSettings;
+document.getElementById('setVolume').oninput=e=>{initAudio();setVolume(+e.target.value/100);};
+document.getElementById('setReduceMotion').onchange=e=>{
+  SETTINGS.reduceMotion=e.target.checked;REDUCE=SETTINGS.reduceMotion;
+  document.body.classList.toggle('reduce-motion',REDUCE);saveSettings();
+};
+document.getElementById('setColorblind').onchange=e=>{
+  SETTINGS.colorblind=e.target.checked;saveSettings();
+  if(!e.target.checked)document.documentElement.style.removeProperty('--good');
+  applyTheme(currentWorldId);applySkin(activeSkin);
+  if(level&&!animRot)buildScene();
+};
+document.getElementById('setHaptics').onchange=e=>{SETTINGS.haptics=e.target.checked;saveSettings();};
+document.getElementById('toastShare').onclick=shareChallenge;
 document.getElementById('levelSelectBack').onclick=()=>{hideLevelSelect();goToMenu();};
 document.getElementById('menuTutBtn').onclick=()=>document.getElementById('tutOverlay').classList.add('show');
 
@@ -1698,8 +4054,18 @@ function initAudio(){
   if(audioCtx)return;
   audioCtx=new(window.AudioContext||window.webkitAudioContext)();
   masterGain=audioCtx.createGain();
-  masterGain.gain.value=audioMuted?0:0.4;
+  masterGain.gain.value=SETTINGS.volume;
   masterGain.connect(audioCtx.destination);
+}
+// Master volume 0..1 (0 == muted). Drives sfx + ambient (all routed through masterGain).
+function setVolume(v){
+  SETTINGS.volume=Math.max(0,Math.min(1,v));
+  audioMuted=SETTINGS.volume<=0.001;
+  if(masterGain&&audioCtx)masterGain.gain.setTargetAtTime(SETTINGS.volume,audioCtx.currentTime,0.05);
+  const btn=document.getElementById('soundBtn');
+  if(btn)btn.textContent=audioMuted?'Sound: Off':'Sound: On';
+  if(!audioMuted&&audioCtx&&ambientNodes.length===0&&!menuMode)(bossMode?startBossAmbient():startAmbient());
+  saveSettings();
 }
 function sfx(type){
   if(!audioCtx||audioMuted)return;
@@ -1708,7 +4074,10 @@ function sfx(type){
   const osc=ac.createOscillator();
   osc.connect(g);
   if(type==='move'){
-    osc.type='sine';osc.frequency.setValueAtTime(520,now);
+    // slight random detune per step so a run of moves doesn't sound robotic
+    const f=505+Math.random()*45;
+    osc.type='sine';osc.frequency.setValueAtTime(f,now);
+    osc.frequency.exponentialRampToValueAtTime(f*0.85,now+0.08);
     g.gain.setValueAtTime(0.18,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.09);
     osc.start(now);osc.stop(now+0.09);
   }else if(type==='rotate'){
@@ -1736,49 +4105,113 @@ function sfx(type){
     osc.frequency.linearRampToValueAtTime(260,now+0.07);
     g.gain.setValueAtTime(0.12,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.08);
     osc.start(now);osc.stop(now+0.09);
+  }else if(type==='key'){
+    // bright two-note pickup chime
+    osc.type='triangle';osc.frequency.setValueAtTime(880,now);
+    osc.frequency.setValueAtTime(1174,now+0.09);
+    g.gain.setValueAtTime(0.16,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.22);
+    osc.start(now);osc.stop(now+0.22);
   }
 }
+/* ── Per-world ambient soundtracks ────────────────────────────────── */
+const AMBIENT_THEMES={
+  1:{ // Origin — calm, orderly, learning (ii–V–I–VI in C)
+    BPM:110,
+    bassLines:[
+      [38,41,45,47],  // Dm7  D2 F2 A2 B2
+      [43,47,50,52],  // G7   G2 B2 D3 E3
+      [36,40,43,45],  // Cmaj7 C2 E2 G2 A2
+      [33,36,40,43],  // Am7  A1 C2 E2 G2
+    ],
+    chordVoicings:[
+      [50,53,57,60],  // Dm7  D3 F3 A3 C4
+      [55,59,62,65],  // G7   G3 B3 D4 F4
+      [48,52,55,59],  // Cmaj7 C3 E3 G3 B3
+      [45,48,52,55],  // Am7  A2 C3 E3 G3
+    ],
+    melody:[
+      [null,65,null,67], // Dm7:  – F4 – G4
+      [67,null,65,null], // G7:   G4 – F4 –
+      [64,null,67,null], // Cmaj7: E4 – G4 –
+      [69,null,67,null], // Am7:  A4 – G4 –
+    ],
+    bassType:'triangle', chordType:'sine', melType:'sine',
+    lpf:3800, delayTime:0.28, feedback:0.22, wet:0.18,
+    bassVol:0.30, chordVol:0.065, melVol:0.09,
+  },
+  2:{ // Ember — waking, hostile, urgent (i–iv–V–i in A minor)
+    BPM:128,
+    bassLines:[
+      [33,36,40,43],  // Am   A1 C2 E2 G2
+      [38,41,45,48],  // Dm   D2 F2 A2 C3
+      [40,44,47,50],  // E7   E2 G#2 B2 D3
+      [33,36,40,43],  // Am   A1 C2 E2 G2
+    ],
+    chordVoicings:[
+      [57,60,64,69],  // Am   A3 C4 E4 A4
+      [62,65,69,74],  // Dm   D4 F4 A4 D5
+      [64,68,71,74],  // E7   E4 G#4 B4 D5
+      [57,60,64,69],  // Am   A3 C4 E4 A4
+    ],
+    melody:[
+      [null,72,null,76], // Am:  – C5 – E5
+      [74,null,72,null], // Dm:  D5 – C5 –
+      [76,null,75,null], // E7:  E5 – D#5 – (half-step tension)
+      [72,null,69,null], // Am:  C5 – A4 –
+    ],
+    bassType:'sawtooth', chordType:'triangle', melType:'triangle',
+    lpf:4400, delayTime:0.16, feedback:0.26, wet:0.15,
+    bassVol:0.26, chordVol:0.055, melVol:0.075,
+  },
+  3:{ // Vault — quiet, cold, ancient, sparse (open add9 drones)
+    BPM:72,
+    bassLines:[
+      [38,null,38,null],  // D2 held
+      [36,null,36,null],  // C2 held
+      [41,null,41,null],  // F2 held
+      [38,null,38,null],  // D2 held
+    ],
+    chordVoicings:[
+      [50,57,62,64],  // Dm(add9)  D3 A3 D4 E4
+      [48,55,60,62],  // C(add9)   C3 G3 C4 D4
+      [53,60,65,67],  // F(add9)   F3 C4 F4 G4
+      [50,57,62,64],  // Dm(add9)  D3 A3 D4 E4
+    ],
+    melody:[
+      [null,null,74,null],
+      [null,72,null,null],
+      [null,null,77,null],
+      [74,null,null,null],
+    ],
+    bassType:'sine', chordType:'sine', melType:'sine',
+    lpf:2600, delayTime:0.42, feedback:0.34, wet:0.28,
+    bassVol:0.16, chordVol:0.035, melVol:0.05,
+  },
+};
 function startAmbient(){
   if(!audioCtx||ambientNodes.length)return;
   const ac=audioCtx;
+  const cfg=AMBIENT_THEMES[currentWorldId]||AMBIENT_THEMES[1];
   // Signal chain: notes → dry gain → lo-pass → masterGain
   //                                 lo-pass → delay → feedback → wet → masterGain
   const dry=ac.createGain(); dry.gain.value=0.78;
-  const lpf=ac.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=3800;
+  const lpf=ac.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=cfg.lpf;
   dry.connect(lpf); lpf.connect(masterGain);
-  const dly=ac.createDelay(0.6); dly.delayTime.value=0.28;
-  const fb=ac.createGain(); fb.gain.value=0.22;
-  const wet=ac.createGain(); wet.gain.value=0.18;
+  const dly=ac.createDelay(0.6); dly.delayTime.value=cfg.delayTime;
+  const fb=ac.createGain(); fb.gain.value=cfg.feedback;
+  const wet=ac.createGain(); wet.gain.value=cfg.wet;
   dly.connect(fb); fb.connect(dly); dly.connect(wet); wet.connect(masterGain);
   lpf.connect(dly);
 
   const m2f=m=>440*Math.pow(2,(m-69)/12);
-  const BPM=110, B=60/BPM;
+  const BPM=cfg.BPM, B=60/BPM;
   const now=ac.currentTime+0.05;
   const rnd=()=>(Math.random()-0.5)*0.016; // ±16 ms humanisation
 
-  // ii–V–I–VI in C  (Dm7 | G7 | Cmaj7 | Am7), one chord per bar
-  const bassLines=[
-    [38,41,45,47],  // Dm7  D2 F2 A2 B2
-    [43,47,50,52],  // G7   G2 B2 D3 E3
-    [36,40,43,45],  // Cmaj7 C2 E2 G2 A2
-    [33,36,40,43],  // Am7  A1 C2 E2 G2
-  ];
-  const chordVoicings=[
-    [50,53,57,60],  // Dm7  D3 F3 A3 C4
-    [55,59,62,65],  // G7   G3 B3 D4 F4
-    [48,52,55,59],  // Cmaj7 C3 E3 G3 B3
-    [45,48,52,55],  // Am7  A2 C3 E3 G3
-  ];
-  // Melody chord-tones over the 4 bars (null = rest)
-  const melody=[
-    [null,65,null,67], // Dm7:  – F4 – G4
-    [67,null,65,null], // G7:   G4 – F4 –
-    [64,null,67,null], // Cmaj7: E4 – G4 –
-    [69,null,67,null], // Am7:  A4 – G4 –
-  ];
+  const{bassLines,chordVoicings,melody}=cfg;
 
   function note(midi,t,dur,type,vol){
+    if(midi==null)return;
     const o=ac.createOscillator(), g=ac.createGain();
     o.type=type; o.frequency.value=m2f(midi);
     const at=Math.max(now,t+rnd());
@@ -1797,15 +4230,15 @@ function startAmbient(){
     for(let beat=0;beat<4;beat++){
       const swg=beat%2===1?B*0.11:0; // swing odd beats
       const t=now+(bar*4+beat)*B+swg;
-      // Walking bass every beat (triangle — warm low end)
-      note(bassLines[ch][beat], t, B*0.78, 'triangle', 0.3);
-      // Piano comp on beats 2 & 4
+      // Walking/held bass every beat
+      note(bassLines[ch][beat], t, B*0.78, cfg.bassType, cfg.bassVol);
+      // Comp on beats 2 & 4
       if(beat===1||beat===3){
-        chordVoicings[ch].forEach(m=>note(m, t+0.018, B*0.38, 'sine', 0.065));
+        chordVoicings[ch].forEach(m=>note(m, t+0.018, B*0.38, cfg.chordType, cfg.chordVol));
       }
       // Sparse melody lead
       const mel=melody[ch][beat];
-      if(mel) note(mel, t, B*0.82, 'sine', 0.09);
+      if(mel) note(mel, t, B*0.82, cfg.melType, cfg.melVol);
     }
   }
 
@@ -1965,12 +4398,11 @@ function startBossAmbient(){
   },loopMs);
   ambientNodes.push({stop:()=>clearTimeout(tid)});
 }
+let lastVolume=SETTINGS.volume>0.001?SETTINGS.volume:0.4;
 function toggleMute(){
-  audioMuted=!audioMuted;
-  storageSet('cubeMazeMuted',audioMuted?'1':'0');
-  if(masterGain)masterGain.gain.setTargetAtTime(audioMuted?0:0.4,audioCtx.currentTime,0.05);
-  const btn=document.getElementById('soundBtn');
-  if(btn)btn.textContent=audioMuted?'Sound: Off':'Sound: On';
+  if(SETTINGS.volume>0.001){lastVolume=SETTINGS.volume;setVolume(0);}
+  else setVolume(lastVolume||0.4);
+  const sl=document.getElementById('setVolume');if(sl)sl.value=Math.round(SETTINGS.volume*100);
 }
 // Unlock audio on first gesture (iOS requirement)
 ['touchstart','mousedown','keydown'].forEach(ev=>
@@ -1985,6 +4417,10 @@ initThree();
 startLevel(5);
 animate();
 goToMenu();
+refreshDailyBtn();
+refreshWeeklyBtn();
+refreshCoins();
+checkSkinUnlocks();
 if(!storageGet('cubeMazeTutorialSeen')){
   document.getElementById('tutOverlay').classList.add('show');
 }
@@ -2008,10 +4444,10 @@ if(window.innerWidth<600){
   td('dpDown', ()=>{ if(!menuMode)tryMove(viewDir(-1,0)); });
   td('dpLeft', ()=>{ if(!menuMode)tryMove(viewDir(0,-1)); });
   td('dpRight',()=>{ if(!menuMode)tryMove(viewDir(0,1));  });
-  td('rpFwd',  ()=>{ if(!menuMode)tryRotate(RX);  });
-  td('rpBack', ()=>{ if(!menuMode)tryRotate(RXn); });
-  td('rpRollL',()=>{ if(!menuMode)tryRotate(RZ);  });
-  td('rpRollR',()=>{ if(!menuMode)tryRotate(RZn); });
+  td('rpFwd',  ()=>{ if(!menuMode)tryRotate(viewRot([1,0,0]));  });   // tumble forward
+  td('rpBack', ()=>{ if(!menuMode)tryRotate(viewRot([-1,0,0])); });   // tumble back
+  td('rpRollL',()=>{ if(!menuMode)tryRotate(viewRot([0,0,1]));  });   // roll left
+  td('rpRollR',()=>{ if(!menuMode)tryRotate(viewRot([0,0,-1])); });   // roll right
 })();
 </script>
 </body>

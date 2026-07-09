@@ -1,0 +1,7 @@
+# Ship only the standalone static game (index.html + three.min.js).
+# Exclude the unused Turborepo monorepo so Vercel serves static files
+# instead of trying to build the workspace.
+/*
+!index.html
+!three.min.js
+!vercel.json
