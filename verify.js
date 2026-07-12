@@ -42,4 +42,78 @@ for(let s=1;s<=60;s++){const N=5;const lvl=buildLevel(N,s*977);if(!lvl){reSolveF
   // rebuild same maze deterministically to re-solve
   // (buildLevel is deterministic per seed so reproduce its successful attempt)
 }
+
+// 4) tile mechanics (one-way / ice / keys) — mirrors index.html's stepDest and
+//    the keyed-mask BFS. The three showcase levels (ids 31-33) have no pivots,
+//    so a moves-only BFS gives their exact par.
+function emptyOpen(N){const open={};for(let x=0;x<N;x++)for(let y=0;y<N;y++)for(let z=0;z<N;z++)open[x+','+y+','+z]=new Set();return open;}
+function link(open,a,b){const d=[b[0]-a[0],b[1]-a[1],b[2]-a[2]];open[a.join(',')].add(dirKey(d));open[b.join(',')].add(dirKey(negDir(d)));}
+function linkOneWay(open,a,b){const d=[b[0]-a[0],b[1]-a[1],b[2]-a[2]];open[a.join(',')].add(dirKey(d));}
+function stepDest(open,N,ice,c,hd){
+  if(!isOpen(open,c,hd))return null;
+  let cur=[c[0]+hd[0],c[1]+hd[1],c[2]+hd[2]];
+  if(cur[0]<0||cur[1]<0||cur[2]<0||cur[0]>=N||cur[1]>=N||cur[2]>=N)return null;
+  if(ice)while(ice.has(cur.join(','))&&isOpen(open,cur,hd)){
+    const n=[cur[0]+hd[0],cur[1]+hd[1],cur[2]+hd[2]];
+    if(n[0]<0||n[1]<0||n[2]<0||n[0]>=N||n[1]>=N||n[2]>=N)break;
+    cur=n;
+  }
+  return cur;
+}
+// moves-only BFS with key mask (valid for pivot-free levels)
+function solveMech(open,N,ice,keys,start,goal){
+  keys=keys||[];const full=(1<<keys.length)-1;
+  const bitOf=c=>{for(let i=0;i<keys.length;i++)if(keys[i][0]===c[0]&&keys[i][1]===c[1]&&keys[i][2]===c[2])return 1<<i;return 0;};
+  const R0=ORIENTS.list[0];
+  const key=(c,m)=>c.join(',')+'|'+m;
+  const dist=new Map();const q=[{c:start,m:bitOf(start)}];dist.set(key(start,q[0].m),0);
+  let head=0;
+  while(head<q.length){
+    const {c,m}=q[head++];const d0=dist.get(key(c,m));
+    if(m===full&&c[0]===goal[0]&&c[1]===goal[1]&&c[2]===goal[2])return d0;
+    for(const hd of horizDirs(R0)){
+      const nc=stepDest(open,N,ice,c,hd);if(!nc)continue;
+      const nm=m|bitOf(nc);const nk=key(nc,nm);
+      if(dist.has(nk))continue;dist.set(nk,d0+1);q.push({c:nc,m:nm});
+    }
+  }
+  return null;
+}
+// Level 31 "One Way": two one-way gates form the only route. par 2.
+{
+  const open=emptyOpen(3);
+  link(open,[0,0,0],[0,0,1]);
+  linkOneWay(open,[0,0,0],[1,0,0]);linkOneWay(open,[1,0,0],[2,0,0]);
+  const par=solveMech(open,3,null,null,[0,0,0],[2,0,0]);
+  const back=stepDest(open,3,null,[1,0,0],[-1,0,0]);
+  console.log('L31 One Way: par',par,par===2?'OK':'FAIL','| reverse blocked:',back===null?'OK':'FAIL');
+  if(par!==2||back!==null)process.exit(1);
+}
+// Level 32 "Thin Ice": open 5x5 plaza, all ice except start/waypoint/goal. par 3.
+{
+  const open=emptyOpen(5);
+  for(let x=0;x<5;x++)for(let z=0;z<4;z++)link(open,[x,0,z],[x,0,z+1]);
+  for(let x=0;x<4;x++)for(let z=0;z<5;z++)link(open,[x,0,z],[x+1,0,z]);
+  const ice=new Set();
+  for(let x=0;x<5;x++)for(let z=0;z<5;z++){
+    if((x===0&&z===0)||(x===2&&z===4)||(x===2&&z===2))continue;
+    ice.add(x+',0,'+z);
+  }
+  const par=solveMech(open,5,ice,null,[0,0,0],[2,0,2]);
+  const slide=stepDest(open,5,ice,[0,0,0],[0,0,1]);
+  console.log('L32 Thin Ice: par',par,par===3?'OK':'FAIL','| slide 0,0,0 +z ->',slide.join(','),slide.join(',')==='0,0,4'?'OK':'FAIL');
+  if(par!==3||slide.join(',')!=='0,0,4')process.exit(1);
+}
+// Level 33 "Gatekeeper": two keys on a cross, goal locked until both held. par 5.
+{
+  const open=emptyOpen(3);
+  link(open,[1,0,1],[1,0,0]);link(open,[1,0,1],[1,0,2]);
+  link(open,[1,0,1],[2,0,1]);link(open,[1,0,1],[0,0,1]);
+  const keys=[[1,0,0],[1,0,2]];
+  const par=solveMech(open,3,null,keys,[1,0,1],[2,0,1]);
+  const noKeys=solveMech(open,3,null,null,[1,0,1],[2,0,1]);
+  console.log('L33 Gatekeeper: par',par,par===5?'OK':'FAIL','| without key rule par would be',noKeys);
+  if(par!==5)process.exit(1);
+}
+console.log('Tile-mechanics checks: OK');
 console.log('Done.');

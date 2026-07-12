@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cube-maze",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-m", "http.server", "3456"],
+      "port": 3456
+    },
+    {
+      "name": "cube-maze-preview",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-m", "http.server", "3457"],
+      "port": 3457
+    }
+  ]
+}

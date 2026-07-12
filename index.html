@@ -37,12 +37,19 @@
       radial-gradient(ellipse 620px 520px at 6% 18%,#2a0d05,transparent),
       #150804;
   }
-  #backdrop.bg-vault{
+  #backdrop.bg-gilded{   /* World 3 — keys: warm gold on deep plum */
     background:
-      radial-gradient(ellipse 1000px 800px at 50% 45%,#211a4d,transparent),
-      radial-gradient(ellipse 600px 600px at 18% 15%,#2a2260,transparent),
-      radial-gradient(ellipse 520px 520px at 88% 78%,#241c55,transparent),
-      #08071a;
+      radial-gradient(ellipse 1000px 820px at 50% 40%,#3a2c10,transparent),
+      radial-gradient(ellipse 620px 620px at 15% 18%,#2a2150,transparent),
+      radial-gradient(ellipse 560px 520px at 86% 80%,#3d2f12,transparent),
+      #0d0a1a;
+  }
+  #backdrop.bg-frost{    /* World 4 — ice: cold cyan on deep blue */
+    background:
+      radial-gradient(ellipse 1000px 820px at 50% -6%,#123a5c,transparent),
+      radial-gradient(ellipse 680px 620px at 12% 70%,#0e2a44,transparent),
+      radial-gradient(ellipse 560px 560px at 88% 22%,#1a4a68,transparent),
+      #060d18;
   }
   #emberField{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;display:none}
   #emberField.show{display:block}
@@ -67,6 +74,20 @@
   .star-dot{
     position:absolute;border-radius:50%;background:#e8dcff;
     animation:starTwinkle ease-in-out infinite;
+  }
+  #snowField{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;display:none}
+  #snowField.show{display:block}
+  @keyframes snowFall{
+    0%{transform:translate(0,-8vh);opacity:0}
+    10%{opacity:.9}
+    90%{opacity:.9}
+    100%{transform:translate(var(--drift,0px),108vh);opacity:0}
+  }
+  .snow-dot{
+    position:absolute;top:-12px;border-radius:50%;
+    background:radial-gradient(circle,#ffffff,#bfe6ff 70%,transparent 100%);
+    box-shadow:0 0 6px 1px rgba(180,230,255,.5);
+    animation:snowFall linear infinite;
   }
   #scene{position:fixed;inset:0;z-index:0}
   #scene canvas{display:block;touch-action:none}
@@ -182,6 +203,35 @@
     50%{background:rgba(255,225,77,.22);border-color:rgba(255,225,77,.7);color:#fff2a8;box-shadow:0 4px 26px rgba(255,225,77,.5)}
   }
   body.reduce-motion #rotHint.hintflash{animation:none}
+
+  /* ── On-cube rotation guide ─────────────── */
+  /* Screen-space badges pinned to the cube's four edges so it's always clear
+     which key rolls/tumbles the cube in that on-screen direction — even from a
+     corner view where the axes look ambiguous. JS projects the cube centre to
+     screen coords each frame and lays the four badges around it. */
+  #rotGuide{position:fixed;inset:0;z-index:14;pointer-events:none;
+    opacity:0;transition:opacity .22s;}
+  #rotGuide.show{opacity:1}
+  .rg{
+    position:absolute;transform:translate(-50%,-50%);
+    display:flex;flex-direction:column;align-items:center;gap:1px;
+    background:rgba(20,14,40,.72);border:1px solid rgba(184,102,245,.55);
+    border-radius:10px;padding:3px 6px;
+    color:#e7cbff;font-size:11px;font-weight:700;line-height:1;
+    box-shadow:0 3px 14px rgba(184,102,245,.28);
+    -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+    user-select:none;white-space:nowrap;
+  }
+  .rg .rg-arrow{font-size:15px;line-height:1;color:#c99bf5}
+  .rg .rg-key{font-size:11px;letter-spacing:.5px}
+  /* On mouse/trackpad devices the touch rot-pad is hidden, so make the badges
+     themselves clickable — a labelled button right on the cube edge. */
+  @media (hover:hover) and (pointer:fine){
+    .rg{pointer-events:auto;cursor:pointer;transition:background .1s,border-color .1s,transform .06s}
+    .rg:hover{background:rgba(45,28,80,.92);border-color:rgba(184,102,245,.9);color:#fff}
+    .rg:active{transform:translate(-50%,-50%) scale(.9)}
+  }
+  body.reduce-motion #rotGuide{transition:none}
 
   /* ── Toast ──────────────────────────────── */
   #toast{
@@ -326,6 +376,25 @@
   }
   #lvlCaption.show{transform:translateX(-50%) translateY(0);opacity:1}
 
+  /* ── Mechanic explainer (first-encounter, one-time) ── */
+  #mechHint{
+    position:fixed;top:max(128px,calc(env(safe-area-inset-top) + 120px));
+    left:50%;transform:translateX(-50%) translateY(-10px);
+    opacity:0;pointer-events:none;z-index:17;
+    width:min(440px,calc(100vw - 40px));
+    display:flex;align-items:center;gap:10px;text-align:left;
+    background:rgba(9,13,32,.94);color:var(--ink);
+    padding:11px 16px;border-radius:14px;font-size:13px;line-height:1.35;
+    border:1px solid var(--accent);box-shadow:0 8px 30px rgba(0,0,0,.45);
+    transition:transform .4s cubic-bezier(.34,1.2,.64,1),opacity .35s ease;
+  }
+  #mechHint.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto;cursor:pointer}
+  #mechHint .mh-icon{font-size:20px;line-height:1;flex:0 0 auto}
+  #mechHint .mh-text{flex:1 1 auto}
+  #mechHint .mh-text b{color:var(--accent)}
+  #mechHint .mh-dismiss{flex:0 0 auto;font-size:11px;color:var(--muted);opacity:.75}
+  body.reduce-motion #mechHint{transition:opacity .2s}   /* fade only, no slide */
+
   /* ── Main Menu ──────────────────────────── */
   #mainMenu{
     position:fixed;inset:0;z-index:40;
@@ -401,6 +470,13 @@
   #toast.endlessmode #toastRetry{display:none}
   #toast.endlessmode #toastBtn{display:none}
   #toast.endlessmode #toastNext{display:inline-block}
+  /* Endless lose toast — a run ends on a loss; show "Level 1" + Menu only */
+  #toast.endlesslose #toastStars{display:none}
+  #toast.endlesslose #toastMap{display:none}
+  #toast.endlesslose #toastNext{display:none}
+  #toast.endlesslose #toastShare{display:none}
+  #toast.endlesslose #toastRetry{display:inline-block}
+  #toast.endlesslose #toastBtn{display:inline-block}
   /* Ghost Chase — caught/escaped toast: show Retry + Menu only */
   #toast.ghostmode #toastStars{display:none}
   #toast.ghostmode #toastMap{display:none}
@@ -474,25 +550,24 @@
   #menuThemes{display:none}
   #menuFooter{font-size:10px;color:var(--dim);margin:6px 0 0;letter-spacing:.3px;opacity:.75}
 
-  /* ── Level Select ───────────────────────── */
+  /* ── Level Select — the Journey map ──────────────────────────
+     A candy-crush style vertical trail: level 1 at the bottom, scroll UP
+     through the four worlds along a winding dotted path.              */
   #levelSelect{
     position:fixed;inset:0;z-index:41;
-    display:flex;align-items:center;justify-content:center;
+    display:flex;flex-direction:column;
     background:
       radial-gradient(ellipse 150% 110% at 50% 28%,rgba(12,24,70,.82),transparent),
-      rgba(7,9,26,.88);
-    backdrop-filter:blur(4px);transition:opacity .4s;
+      rgba(7,9,26,.96);
+    transition:opacity .4s;
   }
   #levelSelect.out{opacity:0;pointer-events:none}
-  #levelSelectBox{
-    width:540px;max-width:calc(100vw - 32px);
-    max-height:80vh;overflow-y:auto;
-    background:rgba(8,12,30,.94);
-    border:1px solid var(--border);border-top-color:rgba(60,180,240,.22);
-    border-radius:22px;padding:28px;
-    box-shadow:0 48px 120px rgba(0,0,0,.82),inset 0 1px 0 rgba(255,255,255,.04);
+  #levelSelectHeader{
+    flex:0 0 auto;display:flex;align-items:center;gap:12px;
+    padding:max(14px,env(safe-area-inset-top)) 18px 12px;
+    position:relative;z-index:3;
+    background:linear-gradient(rgba(7,9,26,.96) 55%,rgba(7,9,26,.75) 82%,transparent);
   }
-  #levelSelectHeader{display:flex;align-items:center;gap:12px;margin:0 0 18px}
   #levelSelectBack{
     cursor:pointer;
     border:1px solid rgba(60,80,140,.42);background:rgba(16,23,55,.72);
@@ -505,37 +580,81 @@
     text-transform:uppercase;color:var(--accent);opacity:.72;flex:1;text-align:center;
   }
   #levelTotalStars{font-size:12px;color:var(--dim);white-space:nowrap}
-  #levelGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-  .lvl-btn{
-    cursor:pointer;border-radius:12px;padding:12px 6px 10px;text-align:center;
-    border:1px solid rgba(60,80,140,.4);background:rgba(16,23,55,.72);
-    display:flex;flex-direction:column;align-items:center;gap:3px;
-    transition:.14s;font-family:inherit;min-height:86px;justify-content:center;
-    position:relative;
-  }
-  .lvl-btn:not(.locked):hover{background:rgba(28,40,88,.85);border-color:rgba(60,180,240,.35);transform:translateY(-1px)}
-  .lvl-btn.locked{cursor:default;opacity:.38;filter:grayscale(.3)}
-  .lvl-btn.done{border-color:rgba(245,166,35,.22)}
-  .lvl-num{font-size:20px;font-weight:800;color:var(--ink);line-height:1}
-  .lvl-name{font-size:8px;font-weight:600;letter-spacing:.5px;color:var(--muted);text-transform:uppercase}
-  .lvl-stars{display:flex;gap:2px}
   .star-on{color:#f5a623;font-size:11px}
   .star-off{color:rgba(245,166,35,.18);font-size:11px}
-  .lvl-lock{font-size:15px;margin-bottom:2px}
-  .lvl-size-tag{font-size:8px;color:var(--dim);font-weight:600;position:absolute;top:6px;right:7px}
-  /* World section headers in level select */
-  .world-header{
-    grid-column:1/-1;padding:16px 0 6px;
-    display:flex;align-items:center;gap:8px;
-    font-size:9px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;
-    transition:color .4s;
+  #levelPathWrap{
+    flex:1;overflow-y:auto;overflow-x:hidden;position:relative;
+    -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+    margin-top:-46px;   /* path scrolls beneath the translucent header */
   }
-  .world-header:first-child{padding-top:2px}
-  .world-hr{flex:1;height:1px;background:currentColor;opacity:.2}
-  .world-tagline{
-    grid-column:1/-1;text-align:center;
-    font-size:10.5px;font-style:italic;opacity:.65;margin:-4px 0 6px;
+  #levelPathWrap::-webkit-scrollbar{width:4px}
+  #levelPathWrap::-webkit-scrollbar-thumb{background:rgba(90,110,180,.35);border-radius:2px}
+  #levelPath{
+    position:relative;width:100%;max-width:520px;margin:0 auto;
+    /* world tint bands, bottom (Origin) → top (Vault) */
+    background:linear-gradient(to top,
+      rgba(53,195,240,.085) 0%, rgba(53,195,240,.015) 30%,
+      rgba(255,138,61,.07) 36%, rgba(255,138,61,.012) 63%,
+      rgba(201,184,240,.08) 69%, rgba(201,184,240,.015) 100%);
   }
+  #lpSvg{position:absolute;inset:0;pointer-events:none}
+  .lp-node{
+    position:absolute;transform:translate(-50%,-50%);z-index:1;
+    width:58px;height:58px;border-radius:50%;cursor:pointer;font-family:inherit;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    background:radial-gradient(circle at 35% 28%,rgba(44,62,126,.96),rgba(13,18,44,.98) 72%);
+    border:2px solid rgba(96,116,190,.6);color:var(--ink);
+    box-shadow:0 7px 18px rgba(0,0,0,.55),inset 0 2px 3px rgba(255,255,255,.12),inset 0 -5px 9px rgba(0,0,0,.42);
+    transition:transform .15s,border-color .15s,box-shadow .15s;
+  }
+  .lp-node:not(.locked):hover{transform:translate(-50%,-50%) scale(1.12);border-color:var(--w-accent,#5ad4ff)}
+  .lp-num{font-size:17px;font-weight:800;line-height:1}
+  .lp-stars{display:flex;gap:1px;line-height:1}
+  .lp-stars .star-on,.lp-stars .star-off{font-size:8.5px}
+  .lp-node.locked{
+    cursor:default;width:46px;height:46px;
+    background:rgba(12,16,36,.92);border-color:rgba(70,80,120,.3);
+    color:rgba(140,150,190,.5);box-shadow:0 4px 10px rgba(0,0,0,.4);
+  }
+  .lp-node.locked svg{width:15px;height:15px}
+  .lp-node.done{border-color:var(--w-accent)}
+  .lp-node.done .lp-num{color:var(--w-accent)}
+  .lp-node.current{border-color:var(--w-accent);box-shadow:0 7px 22px rgba(0,0,0,.55),0 0 22px var(--w-glow,rgba(90,212,255,.35)),inset 0 2px 3px rgba(255,255,255,.12)}
+  .lp-node.current::before{
+    content:'';position:absolute;inset:-9px;border-radius:50%;
+    border:2px solid var(--w-accent);opacity:.55;
+    animation:lpPulse 1.7s ease-out infinite;
+  }
+  body.reduce-motion .lp-node.current::before{animation:none;transform:none;opacity:.4}
+  @keyframes lpPulse{0%{transform:scale(.82);opacity:.65}75%{transform:scale(1.18);opacity:0}100%{transform:scale(1.18);opacity:0}}
+  .lp-node.boss{width:72px;height:72px}
+  .lp-node.boss .lp-num{font-size:20px}
+  .lp-crown{position:absolute;top:-17px;color:var(--w-accent,#f5c343)}
+  .lp-crown svg{width:19px;height:19px}
+  .lp-hero{
+    position:absolute;width:46px;height:46px;pointer-events:none;z-index:2;
+    transform:translate(-50%,-118%);
+    filter:drop-shadow(0 5px 7px rgba(0,0,0,.55));
+    animation:lpBob 2.2s ease-in-out infinite;
+  }
+  body.reduce-motion .lp-hero{animation:none}
+  @keyframes lpBob{0%,100%{transform:translate(-50%,-114%)}50%{transform:translate(-50%,-128%)}}
+  .lp-ribbon{position:absolute;left:0;right:0;text-align:center;transform:translateY(-50%);pointer-events:none;z-index:1}
+  .lp-ribbon-name{
+    font-size:11px;font-weight:800;letter-spacing:5px;text-transform:uppercase;
+    display:flex;align-items:center;gap:12px;justify-content:center;
+  }
+  .lp-ribbon-name::before,.lp-ribbon-name::after{
+    content:'';width:52px;height:1px;background:currentColor;opacity:.3;
+  }
+  .lp-ribbon-tag{font-size:10px;font-style:italic;opacity:.6;margin-top:4px}
+  /* themed set-dressing scattered along each world's stretch of trail */
+  .lp-decor{position:absolute;transform:translate(-50%,-50%);pointer-events:none;z-index:0}
+  .lp-decor-i{display:block;transform:rotate(var(--rot,0deg));transform-origin:50% 90%;
+    animation:lpSway 6s ease-in-out infinite}
+  .lp-decor-i svg{display:block;width:100%;height:auto}
+  @keyframes lpSway{0%,100%{transform:rotate(var(--rot,0deg)) translateY(0)}50%{transform:rotate(var(--rot,0deg)) translateY(-5px)}}
+  body.reduce-motion .lp-decor-i{animation:none}
 
   /* Toast — level mode */
   #toastStars{display:none;font-size:22px;letter-spacing:4px;margin:0 0 8px}
@@ -545,6 +664,13 @@
   #toast.levelmode #toastMap{display:inline-block}
   #toast.levelmode #toastBtn{display:none}
   #toast.levelmode #toastNext{display:inline-block}
+  /* Campaign lose toast — you must clear a level to advance: Retry + Levels, no Next */
+  #toast.levellose #toastStars{display:none}
+  #toast.levellose #toastNext{display:none}
+  #toast.levellose #toastBtn{display:none}
+  #toast.levellose #toastShare{display:none}
+  #toast.levellose #toastMap{display:inline-block}
+  #toast.levellose #toastRetry{display:inline-block}
 
   /* ── Touch D-pad (movement) ─────────────── */
   #dpad{
@@ -641,6 +767,29 @@
   #toast.dailymode #toastRetry{display:none}
   #toast.dailymode #toastBtn{display:inline-block}
   #toastShare{display:none}
+
+  /* ── Daily leaderboard (prototype; only shown in daily mode) ──── */
+  #toastLeaderboard{display:none}
+  #toast.dailymode #toastLeaderboard.has-scores{
+    display:block;margin:2px 0 18px;text-align:left;
+    border:1px solid var(--border);border-radius:10px;overflow:hidden;
+  }
+  .lb-head{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:7px 12px;background:rgba(53,195,240,.08);
+    font-size:9.5px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--accent);
+  }
+  .lb-rename{cursor:pointer;color:var(--dim);font-size:10px;letter-spacing:.4px;text-transform:none}
+  .lb-rename:hover{color:var(--muted)}
+  .lb-row{
+    display:flex;align-items:center;gap:10px;padding:5px 12px;
+    font-size:12px;color:var(--muted);border-top:1px solid rgba(55,65,110,.16);
+  }
+  .lb-row.me{background:rgba(53,195,240,.10);color:var(--ink)}
+  .lb-rank{width:22px;color:var(--dim);font-variant-numeric:tabular-nums;flex-shrink:0}
+  .lb-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lb-moves{font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink)}
+  .lb-empty{padding:10px 12px;font-size:11.5px;color:var(--dim);font-style:italic}
 
   /* ── Overlay boxes (achievements, themes, character, trail) ───── */
   #achieveBox,#themeBox,#charBox,#trailBox,#settingsBox{
@@ -780,12 +929,25 @@
   #menuCoins{position:absolute;top:14px;right:16px}
   #charHint{font-size:11px;color:var(--muted);text-align:center;margin:16px 0 2px}
 
+  /* ── Inline icon sizing (the SVG icon set) ─────────────────── */
+  .ic{display:inline-flex;align-items:center;vertical-align:-3px}
+  .ic svg{width:1.25em;height:1.25em}
+  .ml-icon svg{width:26px;height:26px;color:var(--accent)}
+  .mode-emoji svg{width:24px;height:24px}
+  #menuPlay .mode-emoji{color:#5ad4ff}
+  #menuDaily .mode-emoji{color:#5affa1}
+  #menuWeekly .mode-emoji{color:#f5c343}
+  #menuGhost .mode-emoji{color:#ff8aa8}
+  #mechHint .mh-icon svg{width:20px;height:20px;color:var(--accent)}
+  .skin-chip svg{width:28px;height:28px}
+
 </style>
 </head>
 <body>
 <div id="backdrop" class="bg-origin"></div>
 <div id="emberField"></div>
 <div id="starField"></div>
+<div id="snowField"></div>
 <div id="scene"></div>
 <div id="bossOverlay"></div>
 <div id="particles"></div>
@@ -793,7 +955,7 @@
 
 <div id="mainMenu">
   <div id="menuBox">
-    <div id="menuCoins" class="coin-chip" title="Coins — earn by winning, spend on Character & Trail">🪙 <span class="coin-count">0</span></div>
+    <div id="menuCoins" class="coin-chip" title="Coins — earn by winning, spend on Character & Trail"><span class="ic" data-ic="coin"></span> <span class="coin-count">0</span></div>
     <div id="menuHero">
       <div id="menuCubeWrap" aria-hidden="true">
         <div id="menuCube">
@@ -808,26 +970,26 @@
     </div>
 
     <button id="menuLevels">
-      <span class="ml-icon">🗺️</span>
+      <span class="ml-icon" data-ic="route"></span>
       <span class="ml-label"><b>Play Levels</b><small>30 hand-crafted stages</small></span>
       <span class="ml-arrow">→</span>
     </button>
 
     <div id="menuModes">
       <button id="menuPlay" class="mode-card">
-        <span class="mode-emoji">♾️</span><span class="mode-name">Endless</span>
+        <span class="mode-emoji" data-ic="infinity"></span><span class="mode-name">Endless</span>
         <span id="endlessBadge" class="mode-badge"></span>
       </button>
       <button id="menuDaily" class="mode-card">
-        <span class="mode-emoji">📅</span><span class="mode-name">Daily</span>
+        <span class="mode-emoji" data-ic="calendar"></span><span class="mode-name">Daily</span>
         <span id="menuDailyBadge" class="mode-badge"></span>
       </button>
       <button id="menuWeekly" class="mode-card">
-        <span class="mode-emoji">🏆</span><span class="mode-name">Weekly</span>
+        <span class="mode-emoji" data-ic="trophy"></span><span class="mode-name">Weekly</span>
         <span id="menuWeeklyBadge" class="mode-badge"></span>
       </button>
       <button id="menuGhost" class="mode-card">
-        <span class="mode-emoji">👻</span><span class="mode-name">Ghost&nbsp;Chase</span>
+        <span class="mode-emoji" data-ic="ghost"></span><span class="mode-name">Ghost&nbsp;Chase</span>
         <span class="mode-badge"></span>
       </button>
     </div>
@@ -846,14 +1008,12 @@
 </div>
 
 <div id="levelSelect" class="out">
-  <div id="levelSelectBox">
-    <div id="levelSelectHeader">
-      <button id="levelSelectBack">← Menu</button>
-      <span id="levelSelectTitle">Levels</span>
-      <span id="levelTotalStars"></span>
-    </div>
-    <div id="levelGrid"></div>
+  <div id="levelSelectHeader">
+    <button id="levelSelectBack">← Menu</button>
+    <span id="levelSelectTitle">The Journey</span>
+    <span id="levelTotalStars"></span>
   </div>
+  <div id="levelPathWrap"><div id="levelPath"></div></div>
 </div>
 
 <div id="hud" class="panel">
@@ -885,18 +1045,27 @@
       <div class="ctrl-divider"></div>
     </div>
     <button class="btn btn-primary" id="restart">↻ New Cube</button>
-    <button class="btn" id="hintBtn">💡 Hint</button>
+    <button class="btn" id="hintBtn"><span class="ic" data-ic="bulb"></span> Hint</button>
     <button class="btn" id="solve">Auto-solve</button>
     <div class="ctrl-divider"></div>
     <button class="btn btn-ghost" id="soundBtn">Sound: On</button>
-    <button class="btn btn-ghost" id="settingsBtn">⚙ Settings</button>
+    <button class="btn btn-ghost" id="settingsBtn"><span class="ic" data-ic="gear"></span> Settings</button>
     <button class="btn btn-ghost" id="tutorialBtn">Tutorial</button>
-    <button class="btn btn-ghost" id="menuBtn">☰ Menu</button>
+    <button class="btn btn-ghost" id="menuBtn"><span class="ic" data-ic="burger"></span> Menu</button>
   </div>
 </div>
 
 
 <div id="rotHint">On a pivot — <kbd>Q</kbd><kbd>E</kbd> roll · <kbd>R</kbd><kbd>F</kbd> tumble</div>
+
+<!-- On-cube rotation guide: four key-badges pinned to the cube's screen edges
+     (positioned each frame by updateRotGuide). Shown only while on a pivot. -->
+<div id="rotGuide">
+  <button class="rg" id="rgUp"   type="button"><span class="rg-arrow">▲</span><span class="rg-key">F</span></button>
+  <button class="rg" id="rgDown" type="button"><span class="rg-arrow">▼</span><span class="rg-key">R</span></button>
+  <button class="rg" id="rgLeft" type="button"><span class="rg-arrow">↺</span><span class="rg-key">Q</span></button>
+  <button class="rg" id="rgRight" type="button"><span class="rg-arrow">↻</span><span class="rg-key">E</span></button>
+</div>
 
 <!-- Touch D-pad (movement) -->
 <div id="dpad">
@@ -963,6 +1132,7 @@
   </div>
 </div>
 <div id="lvlCaption"></div>
+<div id="mechHint"></div>
 
 <div id="tutBanner">
   <div id="tutBannerInner">
@@ -978,6 +1148,7 @@
   <div id="toastStars"></div>
   <h2 id="toastTitle">Solved!</h2>
   <p id="toastBody">You navigated the cube.</p>
+  <div id="toastLeaderboard"></div>
   <div class="toast-btns">
     <button class="btn" id="toastRetry">↻ Retry</button>
     <button class="btn" id="toastMap">← Levels</button>
@@ -1013,7 +1184,7 @@
     <div class="overlay-header">
       <button class="overlay-back" id="charBack">← Menu</button>
       <span class="overlay-title">Character</span>
-      <span class="coin-chip">🪙 <span class="coin-count">0</span></span>
+      <span class="coin-chip"><span class="ic" data-ic="coin"></span> <span class="coin-count">0</span></span>
     </div>
     <div id="charGrid"></div>
     <p id="charHint">Pick your explorer — they'll roam every maze.</p>
@@ -1025,7 +1196,7 @@
     <div class="overlay-header">
       <button class="overlay-back" id="trailBack">← Menu</button>
       <span class="overlay-title">Trail</span>
-      <span class="coin-chip">🪙 <span class="coin-count">0</span></span>
+      <span class="coin-chip"><span class="ic" data-ic="coin"></span> <span class="coin-count">0</span></span>
     </div>
     <p class="picker-section-title">Colour</p>
     <div id="trailColorGrid"></div>
@@ -1056,11 +1227,42 @@
       <div><div class="set-label">Haptics</div><div class="set-desc">Vibrate on each move (supported devices)</div></div>
       <label class="switch"><input type="checkbox" id="setHaptics"><span class="track"></span><span class="knob"></span></label>
     </div>
+    <div class="set-row">
+      <div><div class="set-label">Replay tips</div><div class="set-desc">Show the mechanic explainers again from scratch</div></div>
+      <button class="btn btn-ghost" id="setReplayTips">Reset</button>
+    </div>
   </div>
 </div>
 
 <script src="three.min.js"></script>
 <script>
+/* ── Icon set ─────────────────────────────────────────────────────────
+   Hand-drawn inline SVGs (24×24, 1.7px round stroke, currentColor) so the
+   UI has one consistent line-icon language instead of OS emoji. Static
+   markup uses <span data-ic="name"> (filled by injectIcons at boot);
+   dynamic strings embed ICO.name directly.                              */
+const _svg=inner=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+const ICO={
+  // gold coin engraved with the cube — the game's currency
+  coin:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6" fill="#f3b32b" stroke="#845c07" stroke-width="1.5"/><circle cx="12" cy="12" r="6.1" fill="none" stroke="#845c07" stroke-width="1" opacity=".45"/><path d="M12 8.4l3.1 1.8v3.6L12 15.6l-3.1-1.8v-3.6z" fill="none" stroke="#845c07" stroke-width="1.25" stroke-linejoin="round"/><path d="M8.9 10.2l3.1 1.8 3.1-1.8M12 12v3.6" stroke="#845c07" stroke-width="1.05" fill="none"/></svg>`,
+  route:_svg('<path d="M5.5 18.6c5.2 0 2-6.1 7-6.1 3.4 0 4-2.6 2.1-4.4" stroke-dasharray="2.7 2.7"/><circle cx="5.5" cy="18.6" r="1.7" fill="currentColor" stroke="none"/><path d="M14.6 8.4V3.6"/><path d="M14.6 3.9h4l-1.2 1.5 1.2 1.5h-4z" fill="currentColor" stroke="none"/>'),
+  infinity:_svg('<path d="M12 12c-1.6-2.2-3-3.4-4.8-3.4a3.4 3.4 0 1 0 0 6.8c1.8 0 3.2-1.2 4.8-3.4zm0 0c1.6 2.2 3 3.4 4.8 3.4a3.4 3.4 0 1 0 0-6.8c-1.8 0-3.2 1.2-4.8 3.4z"/>'),
+  calendar:_svg('<rect x="4.2" y="5.8" width="15.6" height="14" rx="2.6"/><path d="M4.2 10.3h15.6M8.6 3.6v3.6M15.4 3.6v3.6"/><circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none"/>'),
+  trophy:_svg('<path d="M8.2 4.8h7.6v4.6a3.8 3.8 0 0 1-7.6 0z"/><path d="M8.2 6H4.9c0 2.6 1.4 4 3.4 4.3M15.8 6h3.3c0 2.6-1.4 4-3.4 4.3M12 13.2v3M9 19.6h6M10.2 16.2h3.6l.8 3.4H9.4z"/>'),
+  ghost:_svg('<path d="M12 4.4c-3.5 0-5.9 2.6-5.9 6.2v8.6l2.1-1.7 1.9 1.7 1.9-1.7 1.9 1.7 1.9-1.7 2.1 1.7v-8.6c0-3.6-2.4-6.2-5.9-6.2z"/><circle cx="9.9" cy="10.8" r="1.15" fill="currentColor" stroke="none"/><circle cx="14.1" cy="10.8" r="1.15" fill="currentColor" stroke="none"/>'),
+  bulb:_svg('<path d="M9.6 16.9c-1.8-1.1-3.2-2.9-3.2-5.3A5.6 5.6 0 0 1 12 6a5.6 5.6 0 0 1 5.6 5.6c0 2.4-1.4 4.2-3.2 5.3"/><path d="M9.7 19.3h4.6M10.6 21.5h2.8M12 3.2v1.2"/>'),
+  gear:_svg('<circle cx="12" cy="12" r="3.1"/><path d="M12 4v2.3M12 17.7V20M4 12h2.3M17.7 12H20M6.3 6.3L8 8M16 16l1.7 1.7M17.7 6.3L16 8M8 16l-1.7 1.7"/>'),
+  burger:_svg('<path d="M4.5 7h15M4.5 12h15M4.5 17h15"/>'),
+  key:_svg('<circle cx="8.2" cy="12" r="3.3"/><path d="M11.5 12h8.3M16.6 12v3.1M19.8 12v2.3"/>'),
+  ice:_svg('<path d="M12 3.8v16.4M4.9 7.9l14.2 8.2M19.1 7.9L4.9 16.1"/><path d="M9.7 5.2L12 7l2.3-1.8M9.7 18.8L12 17l2.3 1.8"/>'),
+  timer:_svg('<circle cx="12" cy="13.2" r="6.8"/><path d="M12 13.2V9.6M9.6 3.4h4.8M12 3.4v2.5"/>'),
+  oneway:_svg('<path d="M3.8 12h12.4M12 7.8l4.2 4.2-4.2 4.2M20.2 6.8v10.4"/>'),
+  lock:_svg('<rect x="6.2" y="10.4" width="11.6" height="9" rx="2.2"/><path d="M8.8 10.4V8a3.2 3.2 0 0 1 6.4 0v2.4"/><circle cx="12" cy="14.8" r="1.3" fill="currentColor" stroke="none"/>'),
+  crown:_svg('<path d="M5.2 16l-1.1-7.6 4.3 3.2L12 6.2l3.6 5.4 4.3-3.2L18.8 16z"/><path d="M5.8 18.8h12.4"/>'),
+  footprints:_svg('<ellipse cx="9.2" cy="8.8" rx="2.2" ry="3.1" transform="rotate(-12 9.2 8.8)"/><circle cx="8.6" cy="13.8" r="1.2" fill="currentColor" stroke="none"/><ellipse cx="14.8" cy="13.4" rx="2.2" ry="3.1" transform="rotate(12 14.8 13.4)"/><circle cx="15.4" cy="18.4" r="1.2" fill="currentColor" stroke="none"/>'),
+};
+function injectIcons(){document.querySelectorAll('[data-ic]').forEach(el=>{const s=ICO[el.dataset.ic];if(s)el.innerHTML=s;});}
+injectIcons();
 /* =====================================================================
    CUBE MAZE  —  a 3D maze made of stacked maze layers.
    Logic frame ("cube frame"): cells indexed (x,y,z) in 0..N-1.
@@ -1258,7 +1460,7 @@ function injectMechanic(mech,open,N,pivots,startCell,startOri,rng){
       const [,nc,dir]=passages[i];
       open[nc.join(',')].delete(dirKey(negDir(dir)));   // one-way: keep c->nc, drop nc->c
     }
-    return {};
+    return {oneway:true};
   }
   return null;
 }
@@ -1323,7 +1525,7 @@ function buildLevel(N,seed,opts){
       for(const [cell,d] of cands){
         const goal=cell.split(',').map(Number);
         if(pathHasSlide({N,open,pivots,startCell,startOri,goal,ice:extra.ice},startCell,startOri))
-          return {N,open,pivots,startCell,startOri,goal,seed:seed+attempt*7919,par:d,ice:extra.ice};
+          return {N,open,pivots,startCell,startOri,goal,seed:seed+attempt*7919,par:d,ice:extra.ice,oneway:extra.oneway};
       }
       continue;                            // no ice-critical goal this maze → new seed
     }
@@ -1337,7 +1539,7 @@ function buildLevel(N,seed,opts){
     if(best && bestD>=minWanted){
       const goal=best.split(',').map(Number);
       return {N,open,pivots,startCell,startOri,goal,seed:seed+attempt*7919,par:bestD,
-              ice:extra.ice,keys:extra.keys};
+              ice:extra.ice,keys:extra.keys,oneway:extra.oneway};
     }
   }
   // fallback (shouldn't happen): corner goal
@@ -1538,7 +1740,7 @@ let hintsUsed=0;                // per-level hint count (for a clean-run star/ac
 const COL={
   floor:0x223066, floorEdge:0x4a5db5, wall:0x6f7fd6, wallTop:0x9fb0ff,
   ghost:0x1b2447, ghostEdge:0x2c3a72, player:0xffd45a, goal:0x5affa1, pivot:0xc77dff,
-  enemy:0xff4d6d,
+  enemy:0xff4d6d, wallStyle:'crystal',
 };
 
 function center(){return (N-1)/2;}
@@ -1644,6 +1846,66 @@ function edgeBox(size,h,color,opacity){
   return new THREE.LineSegments(e,m);
 }
 
+/* ── Themed walls ───────────────────────────────────────────────────────
+   Each wall is a small stack — a base slab, a brighter overhanging cap (in
+   the theme's previously-unused wallTop colour), a recessed front panel that
+   catches light, and an emissive accent seam — so walls read as lit, solid
+   structures instead of flat cards. Material + accent vary per theme.        */
+const WALL_STYLES={
+  // Origin — cool crystalline tech panels, a bright seam up high
+  crystal:{rough:.34,metal:.28,emis:.10,capEmis:.40,panel:.55,
+           seam:true,seamY:.66,seamH:.14,seamOp:.55,seamCol:null},
+  // Ember — dark rock slabs split by a molten crack glowing near the base
+  ember:  {rough:.78,metal:.04,emis:.13,capEmis:.55,panel:.42,
+           seam:true,seamY:.26,seamH:.11,seamOp:.85,seamCol:0xff5a1e},
+  // Vault — polished metal blocks with a crisp inset rail across the middle
+  vault:  {rough:.26,metal:.72,emis:.07,capEmis:.45,panel:.65,
+           seam:true,seamY:.5,seamH:.045,seamOp:.6,seamCol:null},
+  // Boss — angry barriers with a wide red glow band
+  boss:   {rough:.5,metal:.18,emis:.28,capEmis:.75,panel:.5,
+           seam:true,seamY:.5,seamH:.5,seamOp:.4,seamCol:0xff2c2c},
+  // Neon skin — near-flat body, blazing edges
+  neon:   {rough:.3,metal:.1,emis:.5,capEmis:.95,panel:.35,
+           seam:true,seamY:.5,seamH:.44,seamOp:.5,seamCol:null},
+  // Midnight skin — brushed metal with a gold cap
+  gold:   {rough:.32,metal:.82,emis:.08,capEmis:.5,panel:.7,
+           seam:true,seamY:.5,seamH:.05,seamOp:.55,seamCol:null},
+  default:{rough:.6,metal:.05,emis:.12,capEmis:.4,panel:.5,seam:false},
+};
+// Build one detailed, theme-styled wall and add it to the cube group.
+// `mid` is the wall midpoint at floor level; `worldDir` its outward normal.
+function addWall(mid,worldDir,tile){
+  const S=WALL_STYLES[COL.wallStyle]||WALL_STYLES.default;
+  const H=0.42;
+  const grp=new THREE.Group();
+  grp.position.copy(mid);
+  grp.lookAt(mid.clone().add(new THREE.Vector3(worldDir[0],0,worldDir[2])));
+  // base slab
+  const base=new THREE.Mesh(new THREE.BoxGeometry(tile*1.02,H,0.07),
+    new THREE.MeshStandardMaterial({color:COL.wall,emissive:COL.wall,
+      emissiveIntensity:S.emis,roughness:S.rough,metalness:S.metal}));
+  base.position.set(0,H/2,0);grp.add(base);
+  // recessed front/back panel — slightly brighter inset that catches the light
+  const panel=new THREE.Mesh(new THREE.BoxGeometry(tile*0.82,H*0.72,0.085),
+    new THREE.MeshStandardMaterial({color:COL.wallTop,emissive:COL.wall,
+      emissiveIntensity:S.emis*0.6,roughness:Math.min(1,S.rough+0.1),
+      metalness:S.metal,transparent:true,opacity:S.panel}));
+  panel.position.set(0,H*0.52,0);grp.add(panel);
+  // brighter overhanging cap rail (uses the theme's wallTop colour)
+  const cap=new THREE.Mesh(new THREE.BoxGeometry(tile*1.07,0.06,0.12),
+    new THREE.MeshStandardMaterial({color:COL.wallTop,emissive:COL.wallTop,
+      emissiveIntensity:S.capEmis,roughness:S.rough*0.6,metalness:S.metal}));
+  cap.position.set(0,H+0.015,0);grp.add(cap);
+  // emissive accent seam (theme glow: crystal band / molten crack / red glow)
+  if(S.seam){
+    const seam=new THREE.Mesh(new THREE.BoxGeometry(tile*0.9,S.seamH,0.02),
+      new THREE.MeshBasicMaterial({color:S.seamCol==null?COL.wallTop:S.seamCol,
+        transparent:true,opacity:S.seamOp,blending:THREE.AdditiveBlending,depthWrite:false}));
+    seam.position.set(0,S.seamY*H,0.05);grp.add(seam);
+  }
+  cubeGroup.add(grp);dynamic.push(grp);
+}
+
 let keyGems=[];   // floating key gems (spun/bobbed by the loop)
 function buildScene(){
   clearDynamic();
@@ -1737,12 +1999,7 @@ function buildScene(){
           cubeGroup.add(arr);dynamic.push(arr);
           continue;
         }
-        const wallMesh=new THREE.Mesh(
-          new THREE.BoxGeometry(tile*1.02,0.42,0.07),
-          new THREE.MeshStandardMaterial({color:COL.wall,emissive:COL.wall,emissiveIntensity:.12,roughness:.6}));
-        const wmid=mid.clone();wmid.y+=0.21;wallMesh.position.copy(wmid);
-        wallMesh.lookAt(wmid.clone().add(new THREE.Vector3(worldDir[0],0,worldDir[2])));
-        cubeGroup.add(wallMesh);dynamic.push(wallMesh);
+        addWall(mid,worldDir,tile);
       }
     } else {
       // ghost tile (faint), so you sense the full cube of layers
@@ -2288,7 +2545,21 @@ function animate(){
       const frac=Math.max(0.22,bossTimeLeft/bossDuration);
       document.getElementById('bossOverlay').style.animationDuration=`${0.22+frac*1.1}s`;
     }
+    // Aggressive whole-screen shake for the duration of the boss fight —
+    // random per-frame jitter (translate + a touch of rotation) that
+    // intensifies as the clock runs down. Off entirely under reduced motion.
+    if(!REDUCE){
+      const urg=bossDuration>0?1-Math.max(0,bossTimeLeft)/bossDuration:0.5; // 0..1
+      const amp=4+urg*8;                              // ~4px early → ~12px at the wire
+      const sx=(Math.random()*2-1)*amp, sy=(Math.random()*2-1)*amp;
+      const rot=(Math.random()*2-1)*(0.3+urg*0.7);    // small rotational kick
+      document.body.style.transform=`translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px) rotate(${rot.toFixed(2)}deg)`;
+    } else if(document.body.style.transform){
+      document.body.style.transform='';
+    }
     if(bossTimeLeft<=0)lose();
+  } else if(document.body.style.transform){
+    document.body.style.transform='';   // stop shaking the moment the fight ends
   }
   // goal proximity glow — pulse scale when player is close
   if(!won&&!lost&&goalObj&&level){
@@ -2417,7 +2688,61 @@ function animate(){
   camSm.el+=(orbit.el-camSm.el)*ck;
   if(shake.amp>0.001)shake.amp*=Math.exp(-dt/130);else shake.amp=0;
   updateCamera();
+  updateRotGuide();
   renderer.render(scene,camera);
+}
+// Lay the four rotation-guide badges around the cube's on-screen silhouette so
+// each key's on-screen effect is unambiguous from any orbit angle. Projects the
+// cube centre (world origin) plus camera-right/up offsets to pixel coords.
+const _rgTmp=new THREE.Vector3();
+const _rgProbe=new THREE.Vector3();
+const _rgProbeBase=new THREE.Vector3();
+const _rgId=new THREE.Quaternion();
+const _rgMat=new THREE.Matrix4();
+const _rgQ=new THREE.Quaternion();
+const _rgQtarget=new THREE.Quaternion();
+let _rgP0=[0,0];
+// Which way (in screen pixels) does the cube's top point START to move when a
+// given rotation begins? viewRot() re-snaps its axis as the board orbits, and
+// that snap can flip a tumble's on-screen direction — so we resolve the live
+// key↔arrow mapping every frame instead of hard-coding it.
+function rgScreenDelta(base,toPix){
+  const G=viewRot(base);
+  _rgMat.set(G[0][0],G[0][1],G[0][2],0, G[1][0],G[1][1],G[1][2],0, G[2][0],G[2][1],G[2][2],0, 0,0,0,1);
+  _rgQtarget.setFromRotationMatrix(_rgMat);
+  _rgQ.copy(_rgId).slerp(_rgQtarget,0.12);      // a small step into the turn
+  const b=toPix(_rgProbe.copy(_rgProbeBase).applyQuaternion(_rgQ));
+  return [b[0]-_rgP0[0], b[1]-_rgP0[1]];
+}
+function updateRotGuide(){
+  const g=document.getElementById('rotGuide');
+  if(!g.classList.contains('show')||is2D||!camera)return;
+  const W=window.innerWidth,H=window.innerHeight;
+  const toPix=v=>{_rgTmp.copy(v).project(camera);return[(_rgTmp.x*0.5+0.5)*W,(-_rgTmp.y*0.5+0.5)*H];};
+  const worldR=(center()+1.1)*spacing;
+  const right=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,0);
+  const up   =new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,1);
+  const O=new THREE.Vector3(0,0,0);
+  const [cx,cy]=toPix(O);
+  const rp=toPix(O.clone().addScaledVector(right,worldR));
+  const upp=toPix(O.clone().addScaledVector(up,worldR));
+  const rx=Math.abs(rp[0]-cx),ry=Math.abs(upp[1]-cy);   // pixel radii, screen-aligned
+  const place=(id,dx,dy)=>{const b=document.getElementById(id);b.style.left=(cx+dx)+'px';b.style.top=(cy+dy)+'px';};
+  place('rgUp',    0,-ry);
+  place('rgDown',  0, ry);
+  place('rgLeft', -rx, 0);
+  place('rgRight', rx, 0);
+  // ── live key↔arrow mapping ─────────────────────────────────────────
+  _rgProbeBase.set(0,(center()+0.5)*spacing,0);   // a point on the cube's top
+  _rgP0=toPix(_rgProbeBase);
+  const fUp   = rgScreenDelta([1,0,0],toPix)[1] < 0;  // does 'F' move the top UP?
+  const qLeft = rgScreenDelta([0,0,1],toPix)[0] < 0;  // does 'Q' roll the top LEFT?
+  const assign=(id,base,key)=>{const b=document.getElementById(id);
+    b.dataset.base=base.join(',');b.querySelector('.rg-key').textContent=key;};
+  assign('rgUp',    fUp?[1,0,0]:[-1,0,0], fUp?'F':'R');
+  assign('rgDown',  fUp?[-1,0,0]:[1,0,0], fUp?'R':'F');
+  assign('rgLeft',  qLeft?[0,0,1]:[0,0,-1], qLeft?'Q':'E');
+  assign('rgRight', qLeft?[0,0,-1]:[0,0,1], qLeft?'E':'Q');
 }
 // quintic smootherstep: zero velocity AND acceleration at both ends -> very smooth
 function smoother(t){return t*t*t*(t*(t*6-15)+10);}
@@ -2425,9 +2750,9 @@ function smoother(t){return t*t*t*(t*(t*6-15)+10);}
 /* =====================================================================
    GAME ACTIONS
    ===================================================================== */
-function startLevel(size,seed,preset){
+function startLevel(size,seed,preset,opts){
   curSize=size;N=size;
-  level=preset||buildLevel(N, seed||((Math.random()*1e9)|0));
+  level=preset||buildLevel(N, seed||((Math.random()*1e9)|0), opts);
   R=ORIENTS.list[level.startOri];p=level.startCell.slice();
   currentSeed=level.seed;
   moveLimit=Math.max(level.par+5, Math.round(level.par*LIMIT_FACTOR));
@@ -2443,11 +2768,21 @@ function startLevel(size,seed,preset){
   document.querySelectorAll('[data-size]').forEach(b=>b.classList.toggle('active',+b.dataset.size===size));
   buildScene();checkRotHint();hideToast();
   if(!menuMode){stopAmbient();if(audioCtx&&!audioMuted)(bossMode?startBossAmbient():startAmbient());}
+  teachLevelMechanics();   // one-time explainer the first time a mechanic appears
 }
 
 function tryMove(worldDir){
   if(won||lost||auto||animRot||animMove)return;
-  const Rt=matT(R);const hd=matVec(Rt,worldDir).map(Math.round);
+  // Snap the world direction to its dominant horizontal axis before quantising.
+  // From a corner/oblique view viewDir() returns a ~45° diagonal (e.g.
+  // [-0.71,0,-0.71]); rounding each component independently yields an invalid
+  // two-axis heading like [-1,0,-1] that never matches a maze passage, so the
+  // player "can't move from corners". Snapping (as viewRot already does for
+  // turns) guarantees one key = one orthogonal step. worldDir always has y=0.
+  const wd = Math.abs(worldDir[0])>=Math.abs(worldDir[2])
+    ? [Math.sign(worldDir[0])||1,0,0]
+    : [0,0,Math.sign(worldDir[2])||1];
+  const Rt=matT(R);const hd=matVec(Rt,wd).map(Math.round);
   const nc=stepDest(level.open,N,level.ice,p,hd);   // includes any ice slide
   if(!nc)return; // wall / out of bounds
   applyMove(nc);
@@ -2517,22 +2852,38 @@ function lose(){
   lost=true;sfx('lose');stopAmbient();if(!REDUCE)shake.amp=0.4;
   document.getElementById('bossOverlay').classList.remove('active');
   document.getElementById('toastShare').style.display='none';
+  // Start from a clean toast state so leftover mode classes can't mis-render.
+  document.getElementById('toast').classList.remove('tutorial','levelmode','levellose','endlessmode','endlesslose','dailymode','ghostmode','freeplay');
+  document.getElementById('toastRetry').textContent='↻ Retry';
   document.getElementById('toast').classList.add('lose');
-  if(endlessMode&&bossMode){
-    document.getElementById('toastTitle').textContent="Time's Up!";
-    document.getElementById('toastBody').textContent=
-      `Boss Level ${endlessCurrent} — you ran out of time. Try again!`;
+  if(endlessMode){
+    // A loss ends the Endless run — send the player back to Level 1 and clear
+    // the resume point so "← Menu" then Endless can't continue the dead run.
+    const reachedLevel=endlessCurrent;
+    const timeout=bossMode;
+    endlessCurrent=1;
+    setEndlessResume(0);
+    refreshEndlessBtn();
+    document.getElementById('toast').classList.add('endlesslose');
+    document.getElementById('toastTitle').textContent=timeout?"Time's Up!":'Out of moves';
+    document.getElementById('toastBody').textContent=timeout
+      ? `You ran out of time on Boss Level ${reachedLevel}. The run's over — back to Level 1!`
+      : `Budget of ${moveLimit} moves exceeded on Level ${reachedLevel}. The run's over — back to Level 1!`;
+    document.getElementById('toastRetry').textContent='↻ Level 1';
     document.getElementById('toastBtn').textContent='← Menu';
-  } else if(endlessMode){
-    document.getElementById('toastTitle').textContent='Out of moves';
-    document.getElementById('toastBody').textContent=
-      `Budget of ${moveLimit} moves exceeded on Endless Level ${endlessCurrent}. Retry to try again.`;
-    document.getElementById('toastBtn').textContent='← Menu';
-  } else if(bossMode){
-    document.getElementById('toastTitle').textContent="Time's Up!";
-    document.getElementById('toastBody').textContent=
-      `Boss Level ${currentLevelId} — you ran out of time. Give it another shot!`;
-    document.getElementById('toastBtn').textContent='← Menu';
+  } else if(levelMode){
+    // Campaign: you must CLEAR a level to unlock the next — a loss offers only
+    // Retry + back to the level map, never a "Next" button.
+    document.getElementById('toast').classList.add('levellose');
+    if(bossMode){
+      document.getElementById('toastTitle').textContent="Time's Up!";
+      document.getElementById('toastBody').textContent=
+        `Boss Level ${currentLevelId} — you ran out of time. Retry the level, or head back to the map.`;
+    } else {
+      document.getElementById('toastTitle').textContent='Out of moves';
+      document.getElementById('toastBody').textContent=
+        `Used all ${moveLimit} moves on Level ${currentLevelId}. The optimal is ${level.par}. Retry, or head back to the map.`;
+    }
   } else if(weeklyMode){
     document.getElementById('toastTitle').textContent='Out of moves';
     document.getElementById('toastBody').textContent=
@@ -2610,6 +2961,7 @@ function applyRotation(G){
   rots++;updateHUD();
   document.getElementById('rotHint').classList.remove('show');
   document.getElementById('rotPad').classList.remove('show');
+  document.getElementById('rotGuide').classList.remove('show');
 }
 function quatFromMat(M){
   const m=new THREE.Matrix4();
@@ -2624,11 +2976,12 @@ function win(){
   document.getElementById('bossOverlay').classList.remove('active');
   document.getElementById('toastShare').style.display='none';
   document.getElementById('toastBtn').textContent='✦ New Cube';
-  document.getElementById('toast').classList.remove('lose','tutorial','levelmode','endlessmode','dailymode','ghostmode','freeplay');
+  document.getElementById('toast').classList.remove('lose','tutorial','levelmode','levellose','endlessmode','endlesslose','dailymode','ghostmode','freeplay');
+  {const lb=document.getElementById('toastLeaderboard');if(lb){lb.classList.remove('has-scores');lb.innerHTML='';}}
   const used=actionsUsed();
   if(ghostMode){
     document.getElementById('toast').classList.add('ghostmode');
-    document.getElementById('toastTitle').textContent='Escaped! 👻';
+    document.getElementById('toastTitle').textContent='Escaped!';
     document.getElementById('toastBody').textContent=
       `You reached the goal in ${moves} move${moves===1?'':'s'} — the ghost never caught you!`;
     document.getElementById('toastRetry').textContent='↻ New Chase';
@@ -2691,6 +3044,7 @@ function win(){
     document.getElementById('toastShare').style.display='inline-block';
     document.getElementById('toastBtn').textContent='← Menu';
     refreshDailyBtn();
+    submitDailyLeaderboard(key,used);   // no-op unless LEADERBOARD_ENDPOINT is set
     checkAchievements({used,stars,isDaily:true,dailyStreak:fd.streak});
     checkSkinUnlocks();
   } else if(levelMode){
@@ -2728,7 +3082,7 @@ function win(){
     const streak=dailyMode?(getDailyData().streak||0):0;
     const gained=awardCoins({used,par:level.par,stars:st,streak});
     const body=document.getElementById('toastBody');
-    body.innerHTML+=` <span style="color:var(--accent2);font-weight:700">+${gained}&nbsp;🪙</span>`;
+    body.innerHTML+=` <span style="color:var(--accent2);font-weight:700">+${gained}&nbsp;<span class="ic">${ICO.coin}</span></span>`;
   }
   showToast();
 }
@@ -2814,7 +3168,7 @@ function updateHUD(){
     if(level&&level.keys){
       kr.style.display='';
       const hk=document.getElementById('hKeys');
-      bumpHud(hk,`${keysGot.size} / ${level.keys.length} 🗝`);
+      bumpHud(hk,`${keysGot.size} / ${level.keys.length}`);
       hk.style.color=allKeysGot()?'#33d17a':'#f5a623';
     }else kr.style.display='none';
   }
@@ -2836,6 +3190,8 @@ function checkRotHint(){
   const show=onPivot&&!won;
   document.getElementById('rotHint').classList.toggle('show',show);
   document.getElementById('rotPad').classList.toggle('show',show);
+  // On-cube guide only makes sense in the 3D orbitable view.
+  document.getElementById('rotGuide').classList.toggle('show',show&&!is2D);
 }
 function showToast(){document.getElementById('toast').classList.add('show');}
 function hideToast(){document.getElementById('toast').classList.remove('show');}
@@ -2862,12 +3218,22 @@ function hideGameUI(){
   document.getElementById('dpad').style.display='none';
   document.getElementById('undoBtn').style.display='none';
   document.getElementById('rotPad').classList.remove('show');
+  document.getElementById('rotGuide').classList.remove('show');
 }
 
 function endlessLevelConfig(n){
   const size=n<=8?3:n<=20?5:7;
   const seed=(n*48271+12345)%999983;
-  return{size,seed};
+  // Weave the existing tile mechanics into Endless on a gentle ramp: leave the
+  // first few levels clean (learn movement/pivots), never on a boss (a timer
+  // AND a new mechanic at once is unfair), and unlock gentlest-first —
+  // one-way @6, +keys @11, +ice @16. ice lands only on the bigger 5³/7³ cubes.
+  let mechanic=null;
+  if(n>=6 && n%5!==0){
+    const unlocked = n>=16 ? 3 : n>=11 ? 2 : 1;
+    mechanic = ['oneway','keys','ice'][n % unlocked];
+  }
+  return{size,seed,mechanic};
 }
 /* ── Coins & unlocks ──────────────────────────────────────────────────
    Coins are earned by winning (more for stars / beating par) and spent to
@@ -2895,15 +3261,21 @@ function buyCosmetic(id,cost){
   const o=getOwned();o.add(id);storageSet('cubeMazeOwned',[...o].join(','));
   return true;
 }
+// All-time furthest level reached. PERMANENT — drives achievements and the
+// Midnight skin unlock (getUnlockedSkins), so a loss must never clear it.
 function getEndlessBest(){return parseInt(storageGet('cubeMazeEndless')||'0',10);}
 function saveEndlessBest(n){
   const b=getEndlessBest();
   if(n>b){storageSet('cubeMazeEndless',String(n));checkAchievementsEndless(n);checkSkinUnlocks();}
 }
+// Current-run resume point (the level to continue from). Set as you play; a
+// loss CLEARS it, so dying ends the run and the next entry starts at Level 1.
+function getEndlessResume(){return parseInt(storageGet('cubeMazeEndlessRun')||'0',10);}
+function setEndlessResume(n){storageSet('cubeMazeEndlessRun',String(Math.max(0,n|0)));}
 function refreshEndlessBtn(){
-  const best=getEndlessBest();
+  const r=getEndlessResume();
   const badge=document.getElementById('endlessBadge');
-  if(badge)badge.textContent=best>0?`Lv ${best+1}`:'';
+  if(badge)badge.textContent=r>1?`Lv ${r}`:'';
 }
 
 /* ── Win particles ────────────────────────────────────────────────── */
@@ -2935,6 +3307,57 @@ function getDailyData(){
   return{lastDate:'',streak:0,done:{}};
 }
 function saveDailyData(data){storageSet('cubeMazeDaily',JSON.stringify(data));}
+
+/* ── Daily leaderboard (PROTOTYPE) ─────────────────────────────────────
+   Off by default: LEADERBOARD_ENDPOINT is '' so nothing hits the network
+   and the toast renders exactly as before. Set it to '/api/leaderboard'
+   (once the serverless function + Vercel KV are provisioned — see
+   LEADERBOARD.md) to turn the Daily screen into a global leaderboard. */
+const LEADERBOARD_ENDPOINT='';   // e.g. '/api/leaderboard'
+
+function playerName(){
+  let n=storageGet('cubeMazeName');
+  if(!n){ n='Cuber'+Math.floor(1000+Math.random()*9000); storageSet('cubeMazeName',n); }
+  return n;
+}
+function renameLeaderboard(){
+  const cur=playerName();
+  const next=(prompt('Leaderboard name (max 16 chars):',cur)||'').trim().slice(0,16);
+  if(next && next!==cur){ storageSet('cubeMazeName',next); }
+}
+function renderLeaderboard(scores,myMoves){
+  const el=document.getElementById('toastLeaderboard');
+  if(!el)return;
+  const me=playerName();
+  if(!scores || !scores.length){
+    el.innerHTML='<div class="lb-empty">No scores yet — you could be first!</div>';
+  } else {
+    const rows=scores.map((s,i)=>{
+      const mine=s.name===me && s.moves===myMoves;
+      return `<div class="lb-row${mine?' me':''}">`+
+             `<span class="lb-rank">${i+1}</span>`+
+             `<span class="lb-name">${s.name.replace(/[<>&]/g,'')}</span>`+
+             `<span class="lb-moves">${s.moves}</span></div>`;
+    }).join('');
+    el.innerHTML=`<div class="lb-head"><span>Today's Leaders</span>`+
+      `<span class="lb-rename" onclick="renameLeaderboard()">✎ ${me}</span></div>`+rows;
+  }
+  el.classList.add('has-scores');
+}
+async function submitDailyLeaderboard(day,moves){
+  if(!LEADERBOARD_ENDPOINT)return;          // feature flag off → no-op
+  const el=document.getElementById('toastLeaderboard');
+  try{
+    const r=await fetch(LEADERBOARD_ENDPOINT,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({day,name:playerName(),moves})
+    });
+    const data=await r.json();
+    renderLeaderboard(data.scores,moves);
+  }catch(_){
+    if(el){el.innerHTML='<div class="lb-empty">Leaderboard offline — score saved locally.</div>';el.classList.add('has-scores');}
+  }
+}
 function refreshDailyBtn(){
   const key=todayKey();const data=getDailyData();
   const done=!!data.done[key];const streak=data.streak||0;
@@ -3015,6 +3438,7 @@ function startEndlessLevel(n){
   const isBoss=n%5===0;
   bossMode=isBoss;
   endlessMode=true;endlessCurrent=n;
+  setEndlessResume(n);   // remember where the live run is, so Menu → continue works
   levelMode=false;ghostMode=false;dailyMode=false;weeklyMode=false;menuMode=false;
   hideLevelSelect();
   document.getElementById('mainMenu').classList.add('out');
@@ -3038,12 +3462,12 @@ function startEndlessLevel(n){
     const hb=document.getElementById('hBudget');
     if(hb)hb.style.color='';
   }
-  const{size,seed}=endlessLevelConfig(n);
-  startLevel(size,seed);
+  const{size,seed,mechanic}=endlessLevelConfig(n);
+  startLevel(size,seed,null,mechanic?{mechanic}:null);
 }
 function enterEndless(){
-  const best=getEndlessBest();
-  startEndlessLevel(best+1);
+  const r=getEndlessResume();
+  startEndlessLevel(r>=1?r:1);   // resume the live run, or start fresh at Level 1 after a loss
 }
 function startGhostChase(seed){
   ghostMode=true;dailyMode=false;weeklyMode=false;levelMode=false;endlessMode=false;bossMode=false;menuMode=false;
@@ -3144,18 +3568,29 @@ const TUT_LEVELS=[
 
 // ── Campaign levels ───────────────────────────────────────────────────────────
 /* ── Worlds & Theming ──────────────────────────────────────────── */
+// One themed world per mechanic band: ORIGIN=basics, EMBER=one-way,
+// GILDED=keys, GLACIER=ice. `first`/`last` are the inclusive level-id span
+// (worlds are no longer a fixed 10 levels each), used by the level-select map.
 const WORLDS=[
-  {id:1,name:'ORIGIN',accent:'#35c3f0',pivotCol:'#b866f5',col:{
+  {id:1,name:'ORIGIN',first:1,last:10,accent:'#35c3f0',pivotCol:'#b866f5',col:{
     floor:0x223066,floorEdge:0x4a5db5,wall:0x6f7fd6,wallTop:0x9fb0ff,
     ghost:0x1b2447,ghostEdge:0x2c3a72,player:0xffd45a,goal:0x5affa1,pivot:0xc77dff,
+    wallStyle:'crystal',
   }},
-  {id:2,name:'EMBER',accent:'#ff8a3d',pivotCol:'#ff6655',col:{
+  {id:2,name:'EMBER',first:11,last:20,accent:'#ff8a3d',pivotCol:'#ff6655',col:{
     floor:0x221008,floorEdge:0x7a3a14,wall:0xa04825,wallTop:0xff9060,
     ghost:0x180b05,ghostEdge:0x5a2510,player:0xffd45a,goal:0x5affa1,pivot:0xff6655,
+    wallStyle:'ember',
   }},
-  {id:3,name:'VAULT',accent:'#c9b8f0',pivotCol:'#e8dcff',col:{
-    floor:0x14101f,floorEdge:0x2e2650,wall:0x453a78,wallTop:0xd8c8ff,
-    ghost:0x0c0a16,ghostEdge:0x1e1836,player:0xffd45a,goal:0x5affa1,pivot:0xe8dcff,
+  {id:3,name:'GILDED',first:21,last:25,accent:'#f0c14b',pivotCol:'#ffd76a',col:{
+    floor:0x1e1630,floorEdge:0x5a4a2a,wall:0x8a6d2f,wallTop:0xf0c14b,
+    ghost:0x120d1e,ghostEdge:0x2a2038,player:0xffd45a,goal:0x5affa1,pivot:0xffd76a,
+    wallStyle:'vault',
+  }},
+  {id:4,name:'GLACIER',first:26,last:30,accent:'#7fdfff',pivotCol:'#bff0ff',col:{
+    floor:0x122036,floorEdge:0x2f5a7a,wall:0x3f7fa8,wallTop:0xcdeeff,
+    ghost:0x0a1420,ghostEdge:0x18344a,player:0xffd45a,goal:0x5affa1,pivot:0x8fe0ff,
+    wallStyle:'crystal',
   }},
 ];
 function applyTheme(worldId){
@@ -3169,6 +3604,7 @@ function applyBossTheme(){
   Object.assign(COL,{
     floor:0x1a0404,floorEdge:0x6b0f0f,wall:0x8c1f1f,wallTop:0xff3838,
     ghost:0x110202,ghostEdge:0x380808,player:0xffd45a,goal:0x5affa1,pivot:0xff4444,
+    wallStyle:'boss',
   });
   document.documentElement.style.setProperty('--accent','#ff2c2c');
   document.documentElement.style.setProperty('--pivot','#ff4444');
@@ -3230,12 +3666,36 @@ function stopStarField(){
   starFieldActive=false;
   const el=document.getElementById('starField');if(el){el.classList.remove('show');el.innerHTML='';}
 }
+// Falling snow for the GLACIER (ice) world.
+let snowFieldActive=false;
+function startSnowField(){
+  if(snowFieldActive)return;
+  snowFieldActive=true;
+  const el=document.getElementById('snowField');if(!el)return;
+  el.innerHTML='';el.classList.add('show');
+  for(let i=0;i<60;i++){
+    const s=document.createElement('div');s.className='snow-dot';
+    const sz=(2+Math.random()*4).toFixed(1)+'px';
+    s.style.cssText=`left:${(Math.random()*100).toFixed(1)}%;width:${sz};height:${sz};`+
+      `animation-duration:${(7+Math.random()*8).toFixed(1)}s;`+
+      `animation-delay:${(-Math.random()*12).toFixed(1)}s;`+
+      `--drift:${(Math.random()*40-20).toFixed(0)}px`;
+    el.appendChild(s);
+  }
+}
+function stopSnowField(){
+  snowFieldActive=false;
+  const el=document.getElementById('snowField');if(el){el.classList.remove('show');el.innerHTML='';}
+}
 function applyBackdrop(worldId){
   const bd=document.getElementById('backdrop');
-  if(bd)bd.className=worldId===2?'bg-ember':worldId===3?'bg-vault':'bg-origin';
-  if(worldId===2){stopStarField();startEmberField();}
-  else if(worldId===3){stopEmberField();startStarField();}
-  else{stopEmberField();stopStarField();}
+  const cls={1:'bg-origin',2:'bg-ember',3:'bg-gilded',4:'bg-frost'}[worldId]||'bg-origin';
+  if(bd)bd.className=cls;
+  // one ambient particle field per world (stop the others first)
+  stopEmberField();stopStarField();stopSnowField();
+  if(worldId===2)startEmberField();
+  else if(worldId===3)startStarField();   // gilded: drifting motes
+  else if(worldId===4)startSnowField();   // glacier: falling snow
 }
 function setWorld(id){currentWorldId=id;applyBackdrop(id);}
 
@@ -3244,11 +3704,11 @@ const SKINS=[
   {id:'neon',name:'Neon',accent:'#00ff88',pivotCol:'#ff00ff',
    unlock:'Complete all 30 campaign levels',
    col:{floor:0x070714,floorEdge:0x0d1a10,wall:0x0e2a18,wallTop:0x00ff88,
-        ghost:0x040408,ghostEdge:0x0a1010,player:0xff00ff,goal:0x00ffff,pivot:0xff00ff}},
+        ghost:0x040408,ghostEdge:0x0a1010,player:0xff00ff,goal:0x00ffff,pivot:0xff00ff,wallStyle:'neon'}},
   {id:'midnight',name:'Midnight',accent:'#c9a84c',pivotCol:'#c9a84c',
    unlock:'Reach endless level 20',
    col:{floor:0x060814,floorEdge:0x121a2e,wall:0x1a2040,wallTop:0xc9a84c,
-        ghost:0x040509,ghostEdge:0x0a0f1a,player:0xffd45a,goal:0x5affa1,pivot:0xc9a84c}},
+        ghost:0x040509,ghostEdge:0x0a0f1a,player:0xffd45a,goal:0x5affa1,pivot:0xc9a84c,wallStyle:'gold'}},
 ];
 function getUnlockedSkins(){
   const u=[];
@@ -3341,7 +3801,7 @@ function cosmeticCard(id,active,chipHTML,name,cost,onPick){
   const card=document.createElement('button');
   card.className='skin-card'+(active?' active-skin':'')+(owned?'':' locked')+(!afford?' cant-afford':'');
   card.innerHTML=chipHTML+`<div class="skin-name">${name}</div>`+
-    (owned?'':`<div class="skin-price">🪙 ${cost}</div>`);
+    (owned?'':`<div class="skin-price"><span class="ic">${ICO.coin}</span> ${cost}</div>`);
   card.onclick=onPick;
   return card;
 }
@@ -3410,7 +3870,7 @@ const TRAIL_STYLES=[
   {id:'dashed',     name:'Dashed',     icon:'╌╌╌', cost:90},
   {id:'beads',      name:'Beads',      icon:'•  •  •', cost:90},
   {id:'diamond',    name:'Diamond',    icon:'◆ ◆ ◆', cost:150},
-  {id:'footprints', name:'Footprints', icon:'👣', cost:220},
+  {id:'footprints', name:'Footprints', icon:ICO.footprints, cost:220},
 ];
 function setTrailColor(id){
   const def=TRAIL_COLORS.find(c=>c.id===id);
@@ -3478,28 +3938,29 @@ const LEVELS=[
   {id:8, world:1, name:'Big Box',       size:5, build:()=>buildLevel(5,31337)},
   {id:9, world:1, name:'Layer Cake',    size:5, build:()=>buildLevel(5,54321)},
   {id:10,world:1, name:'Master Cube',   size:5, build:()=>buildLevel(5,99999)},
-  // World 2 — Ember
-  {id:11,world:2, name:'Ember Wake',    size:3, build:()=>buildLevel(3,11011)},
-  {id:12,world:2, name:'Hot Streak',    size:3, build:()=>buildLevel(3,23451)},
-  {id:13,world:2, name:'Twisted Path',  size:3, build:()=>buildLevel(3,34129,{mechanic:'oneway'})},
-  {id:14,world:2, name:'Cinder Run',    size:5, build:()=>buildLevel(5,45678)},
-  {id:15,world:2, name:'Heat Sink',     size:5, build:()=>buildLevel(5,56789)},
-  {id:16,world:2, name:'Magma Core',    size:5, build:()=>buildLevel(5,67890)},
-  {id:17,world:2, name:'Inferno',       size:5, build:()=>buildLevel(5,78901,{mechanic:'oneway'})},
-  {id:18,world:2, name:'Volcanic',      size:7, build:()=>buildLevel(7,89012)},
-  {id:19,world:2, name:'Brimstone',     size:7, build:()=>buildLevel(7,90123)},
+  // World 2 — EMBER  ·  ONE-WAY GATES throughout (11–19); boss 20 stays clean
+  {id:11,world:2, name:'One Way Out',   size:3, build:()=>buildLevel(3,11011,{mechanic:'oneway'})},
+  {id:12,world:2, name:'Burnt Bridge',  size:3, build:()=>buildLevel(3,23451,{mechanic:'oneway'})},
+  {id:13,world:2, name:'No Return',     size:3, build:()=>buildLevel(3,34129,{mechanic:'oneway'})},
+  {id:14,world:2, name:'Cinder Gate',   size:5, build:()=>buildLevel(5,45678,{mechanic:'oneway'})},
+  {id:15,world:2, name:'Forward Only',  size:5, build:()=>buildLevel(5,56789,{mechanic:'oneway'})},
+  {id:16,world:2, name:'The Turnstile', size:5, build:()=>buildLevel(5,67890,{mechanic:'oneway'})},
+  {id:17,world:2, name:'Molten Lock',   size:5, build:()=>buildLevel(5,78901,{mechanic:'oneway'})},
+  {id:18,world:2, name:'Ash Gate',      size:7, build:()=>buildLevel(7,89012,{mechanic:'oneway'})},
+  {id:19,world:2, name:'Last Bridge',   size:7, build:()=>buildLevel(7,90123,{mechanic:'oneway'})},
   {id:20,world:2, name:'Eternal Flame', size:7, build:()=>buildLevel(7,10203)},
-  // World 3 — Vault
-  {id:21,world:3, name:'Ash Settles',   size:5, build:()=>buildLevel(5,21021)},
-  {id:22,world:3, name:'Cold Room',     size:5, build:()=>buildLevel(5,22022,{mechanic:'ice'})},
-  {id:23,world:3, name:'Hollow Frame',  size:5, build:()=>buildLevel(5,23023,{mechanic:'oneway'})},
-  {id:24,world:3, name:'Old Signal',    size:5, build:()=>buildLevel(5,24024,{mechanic:'keys'})},
-  {id:25,world:3, name:'Glass Floor',   size:7, build:()=>buildLevel(7,25025,{mechanic:'ice'})},
-  {id:26,world:3, name:'Still Water',   size:7, build:()=>buildLevel(7,26026,{mechanic:'ice'})},
-  {id:27,world:3, name:'What Remains',  size:7, build:()=>buildLevel(7,27027)},
-  {id:28,world:3, name:'The Long Wait', size:7, build:()=>buildLevel(7,28028,{mechanic:'keys'})},
-  {id:29,world:3, name:'Last Door',     size:7, build:()=>buildLevel(7,29029,{mechanic:'keys'})},
-  {id:30,world:3, name:'The Vault',     size:7, build:()=>buildLevel(7,30030)},
+  // World 3 — GILDED  ·  KEYS throughout (21–25)
+  {id:21,world:3, name:'First Key',     size:5, build:()=>buildLevel(5,21021,{mechanic:'keys'})},
+  {id:22,world:3, name:'Locksmith',     size:5, build:()=>buildLevel(5,22022,{mechanic:'keys'})},
+  {id:23,world:3, name:'Key & Gate',    size:5, build:()=>buildLevel(5,23023,{mechanic:'keys'})},
+  {id:24,world:3, name:'Tumblers',      size:5, build:()=>buildLevel(5,24024,{mechanic:'keys'})},
+  {id:25,world:3, name:'The Keyring',   size:7, build:()=>buildLevel(7,25025,{mechanic:'keys'})},
+  // World 4 — GLACIER  ·  ICE throughout (26–29); boss 30 stays clean
+  {id:26,world:4, name:'Thin Ice',      size:7, build:()=>buildLevel(7,26026,{mechanic:'ice'})},
+  {id:27,world:4, name:'Black Ice',     size:7, build:()=>buildLevel(7,27027,{mechanic:'ice'})},
+  {id:28,world:4, name:'Glacier',       size:7, build:()=>buildLevel(7,28028,{mechanic:'ice'})},
+  {id:29,world:4, name:'Frostbite',     size:7, build:()=>buildLevel(7,29029,{mechanic:'ice'})},
+  {id:30,world:4, name:'The Vault',     size:7, build:()=>buildLevel(7,30030)},
 ];
 
 /* ── Campaign story: "The Sleeping Cube" ──────────────────────────── */
@@ -3567,37 +4028,42 @@ const STORY={
   },
   worldTagline:{
     1:'The calm chambers. It\'s still asleep — for now.',
-    2:'It knows you\'re here.',
-    3:'Past the fire. It isn\'t angry anymore.',
+    2:'Scorched halls. Every door only opens one way.',
+    3:'The gilded vault. Nothing opens without its key.',
+    4:'The frozen deep. The floor won\'t hold your footing.',
   },
   captions:{
-    1:'The first door was never locked. It just needed to be noticed.',
-    2:'Nothing here goes where it looks like it goes.',
-    3:'It shows you the trick once. It expects you to remember.',
-    4:'A real test — small enough to forgive mistakes.',
+    // World 1 — ORIGIN: learning to move, pivot and turn the cube over
+    1:'The first door was never locked. It just needed a step.',
+    2:'Nothing here goes straight where it looks like it should.',
+    3:'Stand on a pivot, turn the whole world over. It shows you once.',
+    4:'A real maze now — small enough to forgive a wrong turn.',
     5:'Every path here was built to be doubted.',
-    6:'Two turns. One moment of certainty.',
+    6:'Two pivots. Turn, turn again, and the floor is somewhere new.',
     7:'Order this deep isn\'t an accident. It\'s a message.',
     8:'The chambers widen. So does its attention.',
-    9:'You\'re not solving a maze anymore. You\'re reading its mind.',
-    11:'Something felt you arrive.',
-    12:'It\'s not guiding you anymore. It\'s reacting to you.',
-    13:'The paths lie now. On purpose.',
-    14:'Move like it\'s already too late. It nearly is.',
-    15:'This is where it keeps what it doesn\'t want found.',
-    16:'It\'s stopped pretending to sleep.',
-    17:'It isn\'t testing you anymore. It\'s angry.',
-    18:'One wrong turn and it stops being patient.',
-    19:'The last calm room was many rooms ago.',
-    21:'The fire is over. Nothing chases you here.',
-    22:'It\'s not warning you away anymore. It\'s letting you look.',
-    23:'This place remembers being something else.',
-    24:'Something here has been calling for a very long time.',
-    25:'Careful. Some of this was never meant to hold weight.',
-    26:'Nothing moves here unless you make it.',
-    27:'Whatever happened here, it happened before there were doors.',
-    28:'It has been so long since anything answered back.',
-    29:'One door left. It already knows you\'re going to open it.',
+    9:'Every face is a floor. You just have to be the one facing up.',
+    // World 2 — EMBER: one-way gates, no going back
+    11:'Something felt you arrive. The way behind you just sealed.',
+    12:'Cross once. The amber gate won\'t give the bridge back.',
+    13:'The paths only run one way now. On purpose.',
+    14:'Forward is the only direction it leaves you.',
+    15:'Every gate here is a choice you can\'t unmake.',
+    16:'It lets you through, then closes the gap behind you.',
+    17:'One wrong gate and there is no walking it back.',
+    18:'The way out is always ahead of you. Never behind.',
+    19:'The last two-way door was many gates ago.',
+    // World 3 — GILDED: collect every key before the goal opens
+    21:'The fire is over. Now it wants you to gather what it hid.',
+    22:'Every key first, or the way out stays shut.',
+    23:'One gate. One key. It won\'t open for anything less.',
+    24:'Take them all. It counts, even when you don\'t.',
+    25:'Leave nothing behind — the last lock knows if you did.',
+    // World 4 — GLACIER: slide across ice until a wall stops you
+    26:'Step onto the ice and you don\'t stop until something stops you.',
+    27:'Nothing moves here until you do — then it won\'t let you.',
+    28:'Aim before you slide. The ice decides where you land.',
+    29:'One last field of ice. It already knows where you\'ll stop.',
   },
 };
 
@@ -3636,9 +4102,10 @@ const ACHIEVEMENTS=[
   {id:'at_par',      title:'Optimal',      desc:'Solve at par or better'},
   {id:'three_star',  title:'Sharp',        desc:'3-star any campaign level'},
   {id:'five_stars',  title:'Collector',    desc:'Earn 15 total campaign stars'},
-  {id:'origin_done', title:'World 1 Clear',desc:'3-star all 10 Origin levels'},
-  {id:'ember_done',  title:'World 2 Clear',desc:'3-star all 10 Ember levels'},
-  {id:'vault_done',  title:'World 3 Clear',desc:'3-star all 10 Vault levels'},
+  {id:'origin_done', title:'World 1 Clear',desc:'3-star all Origin levels'},
+  {id:'ember_done',  title:'World 2 Clear',desc:'3-star all Ember levels'},
+  {id:'vault_done',  title:'World 3 Clear',desc:'3-star all Gilded levels'},
+  {id:'glacier_done',title:'World 4 Clear',desc:'3-star all Glacier levels'},
   {id:'endless_10',  title:'Explorer',    desc:'Reach endless level 10'},
   {id:'endless_25',  title:'Wanderer',     desc:'Reach endless level 25'},
   {id:'boss_clear',  title:'Boss Slayer',  desc:'Clear a boss level'},
@@ -3679,6 +4146,47 @@ function showCaption(id){
   clearTimeout(showCaption._t);
   showCaption._t=setTimeout(()=>el.classList.remove('show'),3200);
 }
+
+/* ── First-encounter mechanic explainers ─────────────────────────────
+   Each mechanic is explained ONCE, ever, the first time the player meets
+   it (in campaign, Endless, Daily or Weekly). Seen-set is persisted so it
+   never repeats; "Replay tips" in Settings clears it. Non-blocking bar. */
+const MECH_HINTS={
+  oneway:{icon:ICO.oneway, html:'<b>One-way gates</b> — amber arrows only let you pass one way.'},
+  keys:  {icon:ICO.key,    html:'<b>Keys</b> — grab every gem before the goal will open.'},
+  ice:   {icon:ICO.ice,    html:'<b>Ice</b> — you slide until a wall stops you. Plan your landing.'},
+  ghost: {icon:ICO.ghost,  html:'<b>Ghost</b> — it steps toward you every move. Don\'t get caught.'},
+  boss:  {icon:ICO.timer,  html:'<b>Boss</b> — no move budget: reach the goal before time runs out.'},
+};
+function getTaught(){ try{return JSON.parse(storageGet('cubeMazeTaught')||'{}');}catch(_){return{};} }
+function markTaught(id){ const t=getTaught(); t[id]=1; storageSet('cubeMazeTaught',JSON.stringify(t)); }
+function resetTaught(){ storageSet('cubeMazeTaught','{}'); }
+function teachMechanic(id){
+  const h=MECH_HINTS[id]; if(!h)return;
+  if(getTaught()[id])return;                 // already explained once
+  markTaught(id);
+  const el=document.getElementById('mechHint'); if(!el)return;
+  el.innerHTML=`<span class="mh-icon">${h.icon}</span>`+
+               `<span class="mh-text">${h.html}</span>`+
+               `<span class="mh-dismiss">tap ✕</span>`;
+  // reduced-motion: skip the slide, just fade (CSS transition still fine)
+  void el.offsetWidth;
+  el.classList.add('show');
+  const hide=()=>{el.classList.remove('show');el.onclick=null;clearTimeout(teachMechanic._t);};
+  el.onclick=hide;
+  clearTimeout(teachMechanic._t);
+  teachMechanic._t=setTimeout(hide,5000);    // longer than a caption — it's instructional
+}
+// Fire explainers for whatever mechanics the current level/mode uses. Called
+// at the end of startLevel, so it covers every real play mode uniformly.
+function teachLevelMechanics(){
+  if(menuMode||tutorialMode)return;           // background cube / guided tutorial: skip
+  if(bossMode){teachMechanic('boss');}
+  if(ghostMode){teachMechanic('ghost');}
+  if(level&&level.ice){teachMechanic('ice');}
+  if(level&&level.keys&&level.keys.length){teachMechanic('keys');}
+  if(level&&level.oneway){teachMechanic('oneway');}
+}
 function getEarnedAchievements(){
   try{const s=storageGet('cubeMazeAchievements');if(s)return JSON.parse(s);}catch(_){}
   return[];
@@ -3712,6 +4220,8 @@ function checkAchievements(ctx){
     if(emberIds.every(id=>prog[id]&&prog[id].stars===3))awardAchievement('ember_done');
     const vaultIds=LEVELS.filter(l=>l.world===3).map(l=>l.id);
     if(vaultIds.every(id=>prog[id]&&prog[id].stars===3))awardAchievement('vault_done');
+    const glacierIds=LEVELS.filter(l=>l.world===4).map(l=>l.id);
+    if(glacierIds.every(id=>prog[id]&&prog[id].stars===3))awardAchievement('glacier_done');
   }
   if(wasBoss)awardAchievement('boss_clear');
   if(wasBoss&&bossDur>0&&timeSpared/bossDur>0.5)awardAchievement('boss_speed');
@@ -3752,49 +4262,133 @@ function hideAchievements(){
   document.getElementById('mainMenu').classList.remove('out');
 }
 
+/* Set-dressing motifs per world — hand-drawn SVG flora/elements that theme
+   each stretch of the journey. Origin = cyan crystal caverns & frost ferns,
+   Ember = flames, lava rock & charred cinder-brush, Gilded = keys, locks &
+   gold, Glacier = icicles, snowflakes & ice shards. Scattered along the trail
+   edges behind the nodes. */
+const WORLD_DECOR={
+  1:[ // ORIGIN — crystalline & icy
+    `<svg viewBox="0 0 64 90"><ellipse cx="32" cy="84" rx="26" ry="5" fill="#35c3f0" opacity=".12"/><polygon points="19,85 14,46 25,56 27,85" fill="#2aa8e0" opacity=".8"/><polygon points="27,85 31,28 39,52 41,85" fill="#6fd6ff" opacity=".85"/><polygon points="31,28 35,40 39,52" fill="#c8f2ff" opacity=".9"/><polygon points="41,85 47,50 53,60 51,85" fill="#3fb8ec" opacity=".8"/><line x1="31" y1="29" x2="31" y2="52" stroke="#eafaff" stroke-width="1" opacity=".55"/></svg>`,
+    `<svg viewBox="0 0 56 86"><path d="M28 86 V26" stroke="#7fd8f5" stroke-width="2.4" fill="none" stroke-linecap="round"/><g stroke="#aee6fb" stroke-width="1.8" stroke-linecap="round" fill="none" opacity=".85"><path d="M28 38 L13 28 M28 38 L43 28 M28 50 L11 42 M28 50 L45 42 M28 62 L15 55 M28 62 L41 55"/></g><circle cx="28" cy="23" r="3.2" fill="#e3f8ff"/></svg>`,
+    `<svg viewBox="0 0 40 82"><path d="M20 82 V38" stroke="#3fb0da" stroke-width="2" fill="none"/><circle cx="20" cy="32" r="11" fill="#6fd6ff" opacity=".22"/><circle cx="20" cy="32" r="5.5" fill="#cdf1ff" opacity=".92"/><path d="M20 60 q-9 -4 -11 -13 M20 66 q9 -4 11 -13" stroke="#4fb8dd" stroke-width="1.6" fill="none" opacity=".8"/></svg>`,
+  ],
+  2:[ // EMBER — fire & scorched
+    `<svg viewBox="0 0 48 82"><path d="M24 80 C5 60 18 44 22 27 C24 17 22 9 30 3 C28 16 41 24 36 45 C34 63 40 67 30 80 Z" fill="#ff7a2f" opacity=".82"/><path d="M24 80 C15 65 22 52 24 39 C25 31 24 24 28 18 C27 29 34 38 30 53 C28 65 30 71 26 80 Z" fill="#ffd45a" opacity=".88"/></svg>`,
+    `<svg viewBox="0 0 72 58"><path d="M6 52 L15 26 L35 17 L55 26 L66 52 Z" fill="#28110a" stroke="#7a3a14" stroke-width="1.5"/><path d="M21 52 L29 34 L25 27 M42 52 L40 37 L50 30" stroke="#ff7a2f" stroke-width="1.7" fill="none" opacity=".92"/><path d="M29 34 L41 37" stroke="#ffb04d" stroke-width="1.4" fill="none" opacity=".8"/><circle cx="35" cy="24" r="2" fill="#ffd45a" opacity=".9"/></svg>`,
+    `<svg viewBox="0 0 56 84"><path d="M28 84 V44" stroke="#3a1a0e" stroke-width="2.6" fill="none"/><g stroke="#5a2510" stroke-width="2" fill="none" stroke-linecap="round"><path d="M28 56 L13 42 M28 56 L43 42 M28 45 L15 30 M28 45 L41 30 M28 35 L21 22 M28 35 L35 22"/></g><g fill="#ff7a2f"><circle cx="13" cy="42" r="2.2"/><circle cx="43" cy="42" r="2.2"/><circle cx="15" cy="30" r="2"/><circle cx="41" cy="30" r="2"/><circle cx="21" cy="22" r="1.8"/><circle cx="35" cy="22" r="1.8"/></g></svg>`,
+  ],
+  3:[ // GILDED — keys, locks & gold (the keyed world)
+    `<svg viewBox="0 0 40 84"><circle cx="20" cy="16" r="11" fill="none" stroke="#f0c14b" stroke-width="4"/><circle cx="20" cy="16" r="3.5" fill="#0d0a1a"/><rect x="17.5" y="26" width="5" height="52" rx="2" fill="#f0c14b"/><rect x="22.5" y="60" width="9" height="4.5" fill="#f0c14b"/><rect x="22.5" y="70" width="7" height="4.5" fill="#f0c14b"/></svg>`,
+    `<svg viewBox="0 0 56 72"><path d="M18 34 V24 a10 10 0 0 1 20 0 V34" fill="none" stroke="#e8c766" stroke-width="4.5"/><rect x="12" y="33" width="32" height="30" rx="5" fill="#8a6d2f" stroke="#f0c14b" stroke-width="2.5"/><circle cx="28" cy="46" r="4" fill="#ffe9a8"/><rect x="26.5" y="48" width="3" height="9" fill="#ffe9a8"/></svg>`,
+    `<svg viewBox="0 0 64 56"><polygon points="16,20 24,12 34,20 25,34" fill="#ffd76a" opacity=".9"/><polygon points="34,26 44,18 54,28 44,42" fill="#f0c14b" opacity=".85"/><polygon points="24,36 32,30 40,38 32,48" fill="#ffe9a8" opacity=".9"/><g fill="#fff6d8"><circle cx="24" cy="18" r="1.4"/><circle cx="44" cy="24" r="1.4"/></g></svg>`,
+  ],
+  4:[ // GLACIER — icicles, snowflakes & ice shards (the frozen world)
+    `<svg viewBox="0 0 60 84"><rect x="6" y="0" width="48" height="10" fill="#2f5a7a" opacity=".5"/><polygon points="12,8 16,8 14,46" fill="#bff0ff" opacity=".85"/><polygon points="24,8 30,8 27,62" fill="#e6fbff" opacity=".9"/><polygon points="38,8 43,8 40,40" fill="#8fd8f5" opacity=".85"/><polygon points="47,8 51,8 49,30" fill="#bff0ff" opacity=".8"/></svg>`,
+    `<svg viewBox="0 0 64 64"><g stroke="#e6fbff" stroke-width="2.4" stroke-linecap="round" fill="none" opacity=".92"><path d="M32 8 V56 M11 20 L53 44 M53 20 L11 44"/><path d="M32 16 l-6 -6 M32 16 l6 -6 M32 48 l-6 6 M32 48 l6 6"/><path d="M18 24 l-8 -1 M18 24 l-1 -8 M46 40 l8 1 M46 40 l1 8 M46 24 l8 -1 M46 24 l1 -8 M18 40 l-8 1 M18 40 l-1 8"/></g></svg>`,
+    `<svg viewBox="0 0 56 88"><ellipse cx="28" cy="83" rx="22" ry="4.5" fill="#7fdfff" opacity=".12"/><polygon points="17,85 21,44 29,56 27,85" fill="#4aa8d8" opacity=".8"/><polygon points="27,85 32,22 40,52 38,85" fill="#bff0ff" opacity=".9"/><polygon points="32,22 35,38 40,52" fill="#eafcff" opacity=".95"/><polygon points="38,85 44,50 50,60 48,85" fill="#7fd8f5" opacity=".82"/></svg>`,
+  ],
+};
+/* The Journey map: a winding candy-crush trail. Level 1 sits at the BOTTOM
+   and the path snakes upward through the four worlds; the view opens
+   scrolled to the player's current level (their character stands on it). */
 function renderLevelSelect(){
-  const grid=document.getElementById('levelGrid');
-  grid.innerHTML='';
+  const wrap=document.getElementById('levelPath');
+  wrap.innerHTML='';
+  const W=wrap.clientWidth||Math.min(window.innerWidth,520);
+  const n=LEVELS.length;
+  const step=112,padTop=150,padBot=120;
+  const H=padTop+padBot+step*(n-1);
+  wrap.style.height=H+'px';
+  const xFor=i=>W/2+Math.sin(i*0.75)*W*0.28;         // serpentine
+  const yFor=i=>H-padBot-step*i;                     // bottom → top
   const progress=getLevelProgress();
-  let totalStars=0;
+  // current = first unlocked-but-uncleared level (linear unlock ⇒ no gaps)
+  let curId=1;
+  for(let id=1;id<=n;id++)if(progress[id]?.completed)curId=id+1;
+  curId=Math.min(curId,n);
+  // the trail itself: soft s-curves between consecutive nodes
+  const curveTo=(i)=>{const x=xFor(i),y=yFor(i),px=xFor(i-1),py=yFor(i-1),my=(y+py)/2;
+    return ` C ${px.toFixed(1)} ${my.toFixed(1)}, ${x.toFixed(1)} ${my.toFixed(1)}, ${x.toFixed(1)} ${y.toFixed(1)}`;};
+  let dAll=`M ${xFor(0).toFixed(1)} ${yFor(0).toFixed(1)}`,dDone=dAll;
+  for(let i=1;i<n;i++){
+    dAll+=curveTo(i);
+    if(i<=curId-1)dDone+=curveTo(i);
+  }
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.id='lpSvg';svg.setAttribute('width',W);svg.setAttribute('height',H);
+  svg.innerHTML=
+    `<path d="${dAll}" fill="none" stroke="rgba(110,130,200,.28)" stroke-width="3" stroke-dasharray="1 9" stroke-linecap="round"/>`+
+    (curId>1?`<path d="${dDone}" fill="none" stroke="rgba(245,166,35,.5)" stroke-width="3" stroke-dasharray="1 9" stroke-linecap="round"/>`:'');
+  wrap.appendChild(svg);
+  // themed set-dressing along each world's stretch of trail (behind the nodes).
+  // Deterministic scatter (seeded per world) so the layout is stable on rerender.
   WORLDS.forEach(w=>{
-    // World header row
-    const hdr=document.createElement('div');
-    hdr.className='world-header';
-    hdr.style.color=w.accent;
-    hdr.innerHTML=`<span class="world-hr"></span>${w.name}<span class="world-hr"></span>`;
-    grid.appendChild(hdr);
-    if(STORY.worldTagline[w.id]){
-      const tag=document.createElement('div');
-      tag.className='world-tagline';
-      tag.style.color=w.accent;
-      tag.textContent=STORY.worldTagline[w.id];
-      grid.appendChild(tag);
+    const motifs=WORLD_DECOR[w.id]; if(!motifs)return;
+    const first=w.first-1, last=w.last-1;              // 0-indexed level span
+    const yTop=yFor(last)-30, yBot=yFor(first)+70;     // this world's vertical span
+    let seed=(w.id*2654435761)>>>0;
+    const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+    const count=Math.round((w.last-w.first+1)*1.2);    // scale motifs to world length
+    for(let k=0;k<count;k++){
+      const t=(k+0.5)/count;
+      const y=yBot+(yTop-yBot)*t+(rnd()-0.5)*70;
+      const side=k%2?1:-1;                             // alternate left / right edge
+      const edge=side<0?(0.02+rnd()*0.13):(0.85+rnd()*0.13);
+      const size=46+rnd()*42;
+      const rot=((rnd()-0.5)*16).toFixed(1);
+      const el=document.createElement('div');
+      el.className='lp-decor';
+      el.style.left=(W*edge)+'px';el.style.top=y+'px';el.style.width=size+'px';
+      el.innerHTML=`<span class="lp-decor-i" style="--rot:${rot}deg;animation-delay:${(-rnd()*6).toFixed(2)}s">${motifs[(rnd()*motifs.length)|0]}</span>`;
+      wrap.insertBefore(el,svg);   // behind the trail + nodes
     }
-    // Level buttons for this world
-    LEVELS.filter(l=>l.world===w.id).forEach(lvl=>{
-      const unlocked=isLevelUnlocked(lvl.id);
-      const done=progress[lvl.id];
-      if(done)totalStars+=done.stars||0;
-      const btn=document.createElement('button');
-      btn.className='lvl-btn'+(unlocked?'':' locked')+(done?' done':'');
-      if(done)btn.style.borderColor=w.accent+'44'; // 0x44 ≈ 27% alpha
-      const sizeTag=`<span class="lvl-size-tag">${lvl.size}³</span>`;
-      if(unlocked){
-        const s=done?done.stars:0;
-        const stars='<div class="lvl-stars">'
-          +`<span class="${s>=1?'star-on':'star-off'}">★</span>`
-          +`<span class="${s>=2?'star-on':'star-off'}">★</span>`
-          +`<span class="${s>=3?'star-on':'star-off'}">★</span>`
-          +'</div>';
-        btn.innerHTML=sizeTag+`<span class="lvl-num">${lvl.id}</span><span class="lvl-name">${lvl.name}</span>${stars}`;
-        btn.onclick=()=>startLevelById(lvl.id);
-      }else{
-        btn.innerHTML=`<span class="lvl-name">Level ${lvl.id}</span>`;
-      }
-      grid.appendChild(btn);
-    });
   });
+  // world ribbons: one at the foot of each world's stretch of trail
+  WORLDS.forEach(w=>{
+    const first=w.first-1;                             // 0-indexed first level of the world
+    const y=first===0?yFor(0)+step*0.72:(yFor(first-1)+yFor(first))/2;
+    const rb=document.createElement('div');
+    rb.className='lp-ribbon';rb.style.top=y+'px';rb.style.color=w.accent;
+    rb.innerHTML=`<div class="lp-ribbon-name">${w.name}</div>`+
+      (STORY.worldTagline[w.id]?`<div class="lp-ribbon-tag">${STORY.worldTagline[w.id]}</div>`:'');
+    wrap.appendChild(rb);
+  });
+  // level nodes
+  let totalStars=0;
+  LEVELS.forEach((lvl,i)=>{
+    const w=WORLDS.find(x=>x.id===lvl.world)||WORLDS[0];
+    const unlocked=isLevelUnlocked(lvl.id);
+    const done=progress[lvl.id];
+    if(done)totalStars+=done.stars||0;
+    const isBoss=lvl.id%10===0;
+    const node=document.createElement('button');
+    node.className='lp-node'+(unlocked?'':' locked')+(done?' done':'')
+      +(lvl.id===curId&&unlocked&&!done?' current':'')+(isBoss?' boss':'');
+    node.style.left=xFor(i)+'px';node.style.top=yFor(i)+'px';
+    node.style.setProperty('--w-accent',w.accent);
+    node.style.setProperty('--w-glow',w.accent+'55');
+    node.title=unlocked?`${lvl.name} — ${lvl.size}³`:'Locked';
+    if(unlocked){
+      const s=done?done.stars:0;
+      node.innerHTML=(isBoss?`<span class="lp-crown">${ICO.crown}</span>`:'')
+        +`<span class="lp-num">${lvl.id}</span>`
+        +`<span class="lp-stars"><span class="${s>=1?'star-on':'star-off'}">★</span><span class="${s>=2?'star-on':'star-off'}">★</span><span class="${s>=3?'star-on':'star-off'}">★</span></span>`;
+      node.onclick=()=>startLevelById(lvl.id);
+    }else{
+      node.innerHTML=ICO.lock;
+    }
+    wrap.appendChild(node);
+  });
+  // your character stands on the current level
+  try{
+    const def=CHARACTERS.find(c=>c.id===charSkin)||CHARACTERS[0];
+    const img=document.createElement('img');
+    img.src=charThumb(def);img.className='lp-hero';img.alt='';
+    img.style.left=xFor(curId-1)+'px';img.style.top=yFor(curId-1)+'px';
+    wrap.appendChild(img);
+  }catch(_){}
+  renderLevelSelect._curTop=yFor(curId-1);   // for showLevelSelect's scroll
   document.getElementById('levelTotalStars').textContent=`★ ${totalStars}/${LEVELS.length*3}`;
 }
 function showLevelSelect(){
@@ -3803,7 +4397,15 @@ function showLevelSelect(){
   document.getElementById('mainMenu').classList.add('out');
   hideGameUI();
   hideToast();
+  // open the map at the player's current level
+  const wrapEl=document.getElementById('levelPathWrap');
+  const t=renderLevelSelect._curTop;
+  wrapEl.scrollTop=t!=null?Math.max(0,t-wrapEl.clientHeight*0.62):wrapEl.scrollHeight;
 }
+// keep the trail geometry in sync if the window is resized while open
+window.addEventListener('resize',()=>{
+  if(!document.getElementById('levelSelect').classList.contains('out'))renderLevelSelect();
+});
 function hideLevelSelect(){
   document.getElementById('levelSelect').classList.add('out');
 }
@@ -4045,6 +4647,10 @@ document.getElementById('setColorblind').onchange=e=>{
   if(level&&!animRot)buildScene();
 };
 document.getElementById('setHaptics').onchange=e=>{SETTINGS.haptics=e.target.checked;saveSettings();};
+document.getElementById('setReplayTips').onclick=e=>{
+  resetTaught();
+  const b=e.target;const orig=b.textContent;b.textContent='Reset ✓';setTimeout(()=>b.textContent=orig,1500);
+};
 document.getElementById('toastShare').onclick=shareChallenge;
 document.getElementById('levelSelectBack').onclick=()=>{hideLevelSelect();goToMenu();};
 document.getElementById('menuTutBtn').onclick=()=>document.getElementById('tutOverlay').classList.add('show');
@@ -4188,6 +4794,9 @@ const AMBIENT_THEMES={
     bassVol:0.16, chordVol:0.035, melVol:0.05,
   },
 };
+// GLACIER (world 4) shares the hushed VAULT score — its ambient wasn't authored
+// separately, and theme 3's cold, sparse voicing fits the frozen finale.
+AMBIENT_THEMES[4]=AMBIENT_THEMES[3];
 function startAmbient(){
   if(!audioCtx||ambientNodes.length)return;
   const ac=audioCtx;
@@ -4448,6 +5057,20 @@ if(window.innerWidth<600){
   td('rpBack', ()=>{ if(!menuMode)tryRotate(viewRot([-1,0,0])); });   // tumble back
   td('rpRollL',()=>{ if(!menuMode)tryRotate(viewRot([0,0,1]));  });   // roll left
   td('rpRollR',()=>{ if(!menuMode)tryRotate(viewRot([0,0,-1])); });   // roll right
+})();
+
+// On-cube guide badges double as clickable rotate buttons on mouse/trackpad
+// (the touch rot-pad is hidden there). Each badge's base vector is refreshed
+// live by updateRotGuide (dataset.base) so a click always matches the arrow it
+// shows — even across the orbit angles where viewRot flips the mapping.
+(()=>{
+  const rc=id=>document.getElementById(id).addEventListener('click',()=>{
+    if(menuMode)return;
+    const ds=document.getElementById(id).dataset.base;
+    if(!ds)return;
+    tryRotate(viewRot(ds.split(',').map(Number)));
+  });
+  ['rgUp','rgDown','rgLeft','rgRight'].forEach(rc);
 })();
 </script>
 </body>

@@ -1,16 +1,38 @@
-# React + Vite
+# apps/web — Cube Maze (React port)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19 + Vite + Three.js port of the Cube Maze game. **Incomplete** relative to the standalone [../../index.html](../../index.html) — see the gaps list below.
 
-Currently, two official plugins are available:
+## Entry chain
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+`src/main.jsx` → `src/App.jsx` → `src/components/GameContainer.jsx`
 
-## React Compiler
+## Key files
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **`components/GameContainer.jsx`** (~520 lines) — the Three.js heart: builds the scene/camera/renderer, orbit controls, cube/maze/walls/player/trail meshes, and the animation loop (slerp for rotations, lerp for moves). Owns all `gameState`. Supports both 2D and 3D camera modes.
+- **`components/HUD.jsx`** — layer/moves/rotations/budget display.
+- **`components/Controls.jsx`** — view + size controls; restart/solve buttons exist but are **not yet wired to handlers**.
+- **`components/Toast.jsx`** — win/lose overlay.
+- **`components/Help.jsx`** — instructions panel.
+- **`components/RotationHint.jsx`** — pivot-tile rotation prompt.
+- **`utils/{matrixMath,mazeGeneration,solver}.js`** — JavaScript copies of the logic in `packages/game-engine` (TypeScript). This app does **not** import `@cube-maze/game-engine`; see that package's README for why this matters.
 
-## Expanding the Oxlint configuration
+## Known gaps vs. the standalone `index.html`
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+- Keyboard input handling is stubbed/partial.
+- Win/lose transitions are incomplete.
+- Auto-solve wiring is incomplete.
+- `Controls.jsx` restart/solve buttons aren't connected to game actions yet.
+
+## Commands
+
+```bash
+npm run dev       # Vite dev server
+npm run build     # production build
+npm run preview   # preview a production build
+npm run lint       # oxlint
+```
+
+## Tooling notes
+
+- Linting uses **oxlint** (`.oxlintrc.json`), not the eslint config used elsewhere in the monorepo.
+- Uses React 19, while `packages/ui` (the planned shared component library this app should eventually consume) currently pins React 18.

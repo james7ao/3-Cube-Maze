@@ -42,3 +42,8 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.vercel
+.env*
+
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json
